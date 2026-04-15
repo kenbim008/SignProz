@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>SignProz | Smart eSignature Platform</title>
+  <!-- Tailwind + Font Awesome + Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .document-container { background: white; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); transition: all 0.2s ease; }
+    .signature-field { transition: all 0.15s ease; cursor: pointer; backdrop-filter: blur(2px); background: rgba(255,255,240,0.9); border: 2px dashed #3b82f6; border-radius: 12px; padding: 6px 10px; min-width: 120px; text-align: center; font-size: 12px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.05); z-index: 20; }
+    .signature-field.signed { border: 2px solid #10b981; background: #f0fdf4; }
+    .audit-entry { border-left: 3px solid #3b82f6; transition: all 0.1s; }
+    .btn-primary { background: linear-gradient(105deg, #2563eb 0%, #1e40af 100%); }
+    .draw-canvas { border: 2px solid #e2e8f0; border-radius: 16px; cursor: crosshair; background: white; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .referral-stats-card { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+    .tier-bronze { background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); }
+    .tier-silver { background: linear-gradient(135deg, #a8a9ad 0%, #8a8d91 100%); }
+    .tier-gold { background: linear-gradient(135deg, #ffd700 0%, #daa520 100%); }
+    .tier-platinum { background: linear-gradient(135deg, #e5e4e2 0%, #b0b0b0 100%); }
+    .projection-table td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-gray-100">
+
+  <!-- APP ROOT -->
+  <div id="appRoot" class="min-h-screen flex flex-col"></div>
+
+  <!-- Signature Modal -->
+  <div id="signatureModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl overflow-hidden">
+      <div class="bg-gray-50 px-5 py-3 border-b flex justify-between"><h3 class="font-bold"><i class="fas fa-pen-fancy text-blue-600"></i> Sign Field</h3><button id="closeModalBtn" class="text-gray-400"><i class="fas fa-times"></i></button></div>
+      <div class="p-5"><p class="text-sm">Signer: <span id="modalSignerName" class="font-semibold"></span></p>
+        <div class="flex border-b mb-3 gap-3"><button id="typedTabBtn" class="py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600">✍️ Type</button><button id="drawTabBtn" class="py-2 text-sm text-gray-500">🎨 Draw</button></div>
+        <div id="typedPanel"><input type="text" id="typedSignatureInput" class="w-full border rounded-xl p-3 text-lg" placeholder="Full name" style="font-family:'Brush Script MT',cursive"><button id="applyTypedBtn" class="mt-3 w-full bg-blue-600 text-white py-2 rounded-xl">Apply</button></div>
+        <div id="drawPanel" class="hidden"><canvas id="signCanvas" width="400" height="150" class="draw-canvas w-full h-auto border rounded-xl"></canvas><div class="flex gap-2 mt-3"><button id="clearCanvasBtn" class="bg-gray-200 px-3 py-1 rounded-lg">Clear</button><button id="applyDrawBtn" class="flex-1 bg-blue-600 text-white py-1 rounded-lg">Save Drawing</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Affiliate Program Details Modal -->
+  <div id="affiliateModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden transition-all">
+    <div class="bg-white rounded-2xl max-w-4xl w-full mx-4 shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center sticky top-0">
+        <h3 class="text-xl font-bold text-white"><i class="fas fa-hand-holding-usd mr-2"></i>SignProz Affiliate Program</h3>
+        <button id="closeAffiliateModalBtn" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      <div class="p-6 space-y-6">
+        <div class="bg-blue-50 p-4 rounded-xl">
+          <p class="text-sm text-gray-700">Earn <strong class="text-blue-700">20-30% recurring commission</strong> for every customer you refer who upgrades to a paid SignProz plan. No cap, lifetime earnings.</p>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-chart-line text-green-600"></i> How It Works</h4>
+          <div class="grid md:grid-cols-3 gap-4 mt-3">
+            <div class="bg-gray-50 p-3 rounded-lg text-center"><span class="bg-blue-600 text-white w-6 h-6 inline-flex items-center justify-center rounded-full text-sm font-bold">1</span><p class="text-xs mt-1">Share your unique referral link</p></div>
+            <div class="bg-gray-50 p-3 rounded-lg text-center"><span class="bg-blue-600 text-white w-6 h-6 inline-flex items-center justify-center rounded-full text-sm font-bold">2</span><p class="text-xs mt-1">Friend signs up & upgrades to Pro/Enterprise</p></div>
+            <div class="bg-gray-50 p-3 rounded-lg text-center"><span class="bg-blue-600 text-white w-6 h-6 inline-flex items-center justify-center rounded-full text-sm font-bold">3</span><p class="text-xs mt-1">You earn 20-30% monthly recurring commission</p></div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-trophy text-yellow-600"></i> Affiliate Tiers</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+            <div class="bg-amber-50 p-3 rounded-lg text-center border border-amber-200"><div class="w-10 h-10 rounded-full tier-bronze mx-auto flex items-center justify-center text-white font-bold">B</div><p class="font-bold mt-1">Bronze</p><p class="text-xs">0-4 referrals</p><p class="text-xs text-green-600">20% commission</p></div>
+            <div class="bg-gray-50 p-3 rounded-lg text-center border border-gray-200"><div class="w-10 h-10 rounded-full tier-silver mx-auto flex items-center justify-center text-white font-bold">S</div><p class="font-bold mt-1">Silver</p><p class="text-xs">5-14 referrals</p><p class="text-xs text-green-600">22% commission</p></div>
+            <div class="bg-yellow-50 p-3 rounded-lg text-center border border-yellow-200"><div class="w-10 h-10 rounded-full tier-gold mx-auto flex items-center justify-center text-white font-bold">G</div><p class="font-bold mt-1">Gold</p><p class="text-xs">15-49 referrals</p><p class="text-xs text-green-600">25% commission</p></div>
+            <div class="bg-gray-100 p-3 rounded-lg text-center border border-gray-300"><div class="w-10 h-10 rounded-full tier-platinum mx-auto flex items-center justify-center text-gray-800 font-bold">P</div><p class="font-bold mt-1">Platinum</p><p class="text-xs">50+ referrals</p><p class="text-xs text-green-600">30% commission</p></div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-dollar-sign text-green-600"></i> Commission Structure</h4>
+          <table class="w-full text-sm mt-2 border-collapse">
+            <tr class="border-b"><td class="py-2">Pro Plan ($29/month)</td><td class="py-2 text-green-700 font-semibold">$5.80-$8.70/month recurring</td><td class="py-2 text-xs text-gray-500">$69.60-$104.40/year per referral</td></tr>
+            <tr class="border-b"><td class="py-2">Enterprise Plan ($499/month)</td><td class="py-2 text-green-700 font-semibold">$99.80-$149.70/month recurring</td><td class="py-2 text-xs text-gray-500">$1,197.60-$1,796.40/year per referral</td></tr>
+          </table>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-clock"></i> Payout Schedule</h4>
+          <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 mt-2">
+            <li>Payouts issued monthly on the 15th</li>
+            <li>Minimum payout: $50 (accumulates until threshold met)</li>
+            <li>Payment methods: PayPal, Stripe, or Bank Transfer</li>
+            <li>Real-time tracking in your affiliate dashboard</li>
+          </ul>
+        </div>
+
+        <button id="closeAffiliateModalFooterBtn" class="w-full bg-blue-600 text-white py-2 rounded-xl font-semibold">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addModeBadge" class="hidden fixed bottom-6 right-6 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg text-sm z-40"><i class="fas fa-hand-pointer"></i> Add mode active</div>
+
+  <script>
+    // ----------------------- STATE & GLOBAL -----------------------
+    let currentUser = null;
+    let activePage = 'home';
+    let signatureFields = [];
+    let signers = [];
+    let auditLog = [];
+    let addFieldMode = false;
+    let currentFieldIdForModal = null;
+    let drawing = false;
+    let canvasCtx = null, canvasEl = null;
+    let currentDrawDataUrl = null;
+    
+    let affiliateReferrals = [];
+    let monthlyDocumentCount = 0;
+    
+    const PRO_MONTHLY_LIMIT = 200;
+    const FREE_TIER_LIMIT = 3;
+    
+    let templates = [
+      { id: 't1', name: 'NDA Agreement', fields: [{ leftPercent: 35, topPercent: 55 }, { leftPercent: 65, topPercent: 55 }], signerCount: 2 },
+      { id: 't2', name: 'Sales Contract', fields: [{ leftPercent: 40, topPercent: 70 }, { leftPercent: 60, topPercent: 70 }], signerCount: 2 },
+      { id: 't3', name: 'Service Agreement', fields: [{ leftPercent: 45, topPercent: 65 }], signerCount: 1 }
+    ];
+    
+    let reminderSettings = { enabled: false, daysBefore: 3, expirationDays: 7, reminderSent: false };
+    let expirationTimer = null;
+    let bulkQueue = [];
+    
+    function setActivePage(page, pushState = true) {
+      activePage = page;
+      renderApp();
+      if (pushState) window.history.pushState({ page }, '', `#${page}`);
+    }
+
+    function generateAffiliateCode() {
+      return 'SF-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+    }
+
+    function getAffiliateTier(referralCount) {
+      if (referralCount >= 50) return { name: 'Platinum', commission: 30, color: 'tier-platinum' };
+      if (referralCount >= 15) return { name: 'Gold', commission: 25, color: 'tier-gold' };
+      if (referralCount >= 5) return { name: 'Silver', commission: 22, color: 'tier-silver' };
+      return { name: 'Bronze', commission: 20, color: 'tier-bronze' };
+    }
+
+    // 3-Year Revenue Projection Data (Non-Aggressive)
+    const revenueProjection = {
+      year1: { newReferrals: 20, totalReferrals: 20, earnings: 661, avgMonthly: 55, endMonthly: 116 },
+      year2: { newReferrals: 31, totalReferrals: 51, earnings: 3204, avgMonthly: 267, endMonthly: 420 },
+      year3: { newReferrals: 43, totalReferrals: 94, earnings: 9060, avgMonthly: 755, endMonthly: 1060 },
+      total: { referrals: 94, earnings: 12925 }
+    };
+
+    function handleSignup(email, password, plan = 'free', referrerCode = null) {
+      if (!email) return false;
+      const affiliateCode = generateAffiliateCode();
+      currentUser = { 
+        email, plan: plan, 
+        docsRemaining: (plan === 'free' ? FREE_TIER_LIMIT : (plan === 'unlimited' ? PRO_MONTHLY_LIMIT : Infinity)), 
+        documentsSigned: 0,
+        monthlyDocCount: 0,
+        affiliateCode: affiliateCode,
+        referralEarnings: 0,
+        referralCount: 0,
+        paidReferrals: 0,
+        planType: plan
+      };
+      signatureFields = [];
+      signers = [{ id: "s1", name: currentUser.email.split('@')[0], email: currentUser.email }];
+      auditLog = [];
+      monthlyDocumentCount = 0;
+      affiliateReferrals = [];
+      
+      if (referrerCode) addAudit(`🎉 Signed up via affiliate link: ${referrerCode}`);
+      addAudit(`Welcome ${currentUser.email}! Join the affiliate program to earn 20-30% recurring commissions.`);
+      setActivePage('dashboard');
+      return true;
+    }
+
+    function handleLogin(email) {
+      if (!email) return false;
+      currentUser = { 
+        email, plan: 'free', docsRemaining: FREE_TIER_LIMIT, documentsSigned: 0, monthlyDocCount: 0,
+        affiliateCode: generateAffiliateCode(),
+        referralEarnings: 0,
+        referralCount: 0,
+        paidReferrals: 0,
+        planType: 'free'
+      };
+      signers = [{ id: "s1", name: email.split('@')[0], email }];
+      signatureFields = [];
+      auditLog = [];
+      monthlyDocumentCount = 0;
+      affiliateReferrals = [];
+      addAudit(`Logged in as ${email}. Start sharing your affiliate link to earn!`);
+      setActivePage('dashboard');
+      return true;
+    }
+
+    function loadSampleAffiliateData() {
+      if (currentUser) {
+        currentUser.referralCount = 3;
+        currentUser.paidReferrals = 2;
+        currentUser.referralEarnings = 11.60;
+        affiliateReferrals = [
+          { email: "john@example.com", status: "active", plan: "Pro", date: "2026-03-15", earnings: 5.80 },
+          { email: "jane@example.com", status: "active", plan: "Pro", date: "2026-03-20", earnings: 5.80 },
+          { email: "bob@example.com", status: "pending", plan: null, date: "2026-04-01", earnings: 0 }
+        ];
+        addAudit("Sample affiliate data loaded. See projected earnings below!");
+        renderDashboardContent();
+      }
+    }
+
+    function handleLogout() {
+      if (expirationTimer) clearTimeout(expirationTimer);
+      currentUser = null;
+      signatureFields = [];
+      signers = [];
+      auditLog = [];
+      addFieldMode = false;
+      setActivePage('home');
+    }
+
+    function upgradeToUnlimited() {
+      if (!currentUser) return;
+      currentUser.plan = 'unlimited';
+      currentUser.planType = 'unlimited';
+      currentUser.docsRemaining = PRO_MONTHLY_LIMIT;
+      currentUser.monthlyDocCount = 0;
+      addAudit(`✨ UPGRADED to Pro Plan ($29/mo): ${PRO_MONTHLY_LIMIT} documents per month.`);
+      alert(`Thank you! You are now on the Pro Plan.`);
+      renderApp();
+    }
+
+    function upgradeToEnterprise() {
+      if (!currentUser) return;
+      currentUser.plan = 'enterprise';
+      currentUser.planType = 'enterprise';
+      currentUser.docsRemaining = Infinity;
+      addAudit(`🏢 UPGRADED to Enterprise plan ($499/mo): Unlimited documents.`);
+      alert('Enterprise plan activated!');
+      renderApp();
+    }
+
+    function addAudit(message, type = 'info') {
+      const entry = { timestamp: new Date().toLocaleString(), message, type };
+      auditLog.unshift(entry);
+      if (activePage === 'dashboard') renderDashboardContent();
+    }
+
+    function genId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 6); }
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    function checkFairUseLimit() {
+      if (!currentUser) return true;
+      if (currentUser.planType === 'enterprise') return true;
+      if (currentUser.planType === 'unlimited') {
+        if (currentUser.monthlyDocCount >= PRO_MONTHLY_LIMIT) {
+          addAudit(`⚠️ PRO PLAN LIMIT REACHED: ${PRO_MONTHLY_LIMIT} documents this month.`, "warn");
+          alert(`You have reached your Pro Plan limit of ${PRO_MONTHLY_LIMIT} documents this month.`);
+          return false;
+        }
+      }
+      if (currentUser.planType === 'free') {
+        if (currentUser.docsRemaining <= 0) {
+          addAudit(`⚠️ Free tier limit reached (${FREE_TIER_LIMIT} documents).`, "warn");
+          alert(`You have used your ${FREE_TIER_LIMIT} free documents. Upgrade to Pro.`);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function loadTemplate(templateId) {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) return;
+      signatureFields = template.fields.map((f, idx) => ({
+        id: genId(),
+        signerId: signers[idx % signers.length]?.id || signers[0]?.id,
+        leftPercent: f.leftPercent,
+        topPercent: f.topPercent,
+        signedData: null,
+        status: 'pending'
+      }));
+      addAudit(`📋 Loaded template: ${template.name}`);
+      renderDashboardContent();
+    }
+    
+    function setRemindersAndExpiration(enabled, daysBefore, expirationDays) {
+      reminderSettings = { enabled, daysBefore, expirationDays, reminderSent: false };
+      if (expirationTimer) clearTimeout(expirationTimer);
+      renderDashboardContent();
+    }
+    
+    function openBulkSendModal() {
+      if (currentUser?.planType === 'free') {
+        alert("Bulk send is available on Pro and Enterprise plans only.");
+        return;
+      }
+      const emails = prompt("Enter comma-separated email addresses for bulk send:");
+      if (!emails) return;
+      const emailList = emails.split(',').map(e => e.trim()).filter(e => e);
+      bulkQueue = emailList.map(email => ({ email, name: email.split('@')[0], status: 'pending' }));
+      addAudit(`📨 BULK SEND: Initiated to ${bulkQueue.length} recipients.`);
+      if (bulkQueue.length > 0) {
+        signers = bulkQueue.map((r, idx) => ({ id: genId(), name: r.name, email: r.email }));
+        renderDashboardContent();
+      }
+    }
+
+    function addSignatureFieldAt(xPercent, yPercent) {
+      if (!addFieldMode) return false;
+      if (!signers.length) return false;
+      const defaultSigner = signers[0]?.id;
+      if (!defaultSigner) return false;
+      const newField = { id: genId(), signerId: defaultSigner, leftPercent: Math.min(90, Math.max(5, xPercent)), topPercent: Math.min(90, Math.max(5, yPercent)), signedData: null, status: 'pending' };
+      signatureFields.push(newField);
+      addAudit(`➕ Added signature field`);
+      renderDashboardContent();
+      return true;
+    }
+
+    function renderFieldsOnDocument(containerElement) {
+      if (!containerElement) return;
+      containerElement.innerHTML = '';
+      signatureFields.forEach(field => {
+        const signerObj = signers.find(s => s.id === field.signerId) || signers[0];
+        const isSigned = !!field.signedData;
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = `signature-field ${isSigned ? 'signed' : ''} absolute pointer-events-auto flex flex-col items-center justify-center`;
+        fieldDiv.style.left = `${field.leftPercent}%`;
+        fieldDiv.style.top = `${field.topPercent}%`;
+        fieldDiv.style.transform = 'translate(-50%, -50%)';
+        fieldDiv.style.minWidth = '130px';
+        let contentHtml = '';
+        if (isSigned) {
+          if (field.signedData.type === 'typed') contentHtml = `<div class="text-xs text-green-700 font-semibold">✓ Signed</div><div class="text-sm" style="font-family: 'Brush Script MT', cursive;">${field.signedData.html}</div>`;
+          else if (field.signedData.type === 'draw') contentHtml = `<div class="text-xs text-green-600">✍️ Signature</div><img src="${field.signedData.imgData}" style="max-height: 40px; max-width: 110px;" />`;
+        } else contentHtml = `<div class="text-xs font-semibold text-gray-500">🔏 Pending</div><div class="text-[11px]">${escapeHtml(signerObj.name)}</div>`;
+        fieldDiv.innerHTML = `<div class="flex justify-between w-full items-center gap-1 text-[10px] mb-1"><span class="bg-gray-200 px-1 rounded">${escapeHtml(signerObj.name.split(' ')[0])}</span><div class="flex gap-1">${!isSigned ? `<button class="sign-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}"><i class="fas fa-pen"></i></button>` : ''}<button class="delete-field-btn text-red-400 hover:text-red-700 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}"><i class="fas fa-times"></i></button></div></div><div class="text-center w-full">${contentHtml}</div>`;
+        containerElement.appendChild(fieldDiv);
+      });
+      document.querySelectorAll('.sign-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.getAttribute('data-id'); openSignatureModal(id); }));
+      document.querySelectorAll('.delete-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.getAttribute('data-id'); deleteFieldById(id); }));
+    }
+
+    function deleteFieldById(id) { signatureFields = signatureFields.filter(f => f.id !== id); addAudit(`Removed signature field`); renderDashboardContent(); }
+
+    function openSignatureModal(fieldId) {
+      const field = signatureFields.find(f => f.id === fieldId);
+      if (!field || field.signedData) return;
+      currentFieldIdForModal = fieldId;
+      const signer = signers.find(s => s.id === field.signerId) || signers[0];
+      document.getElementById('modalSignerName').innerText = signer.name;
+      document.getElementById('typedSignatureInput').value = signer.name;
+      if (canvasCtx && canvasEl) { canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height); canvasCtx.fillStyle = "white"; canvasCtx.fillRect(0, 0, canvasEl.width, canvasEl.height); currentDrawDataUrl = null; }
+      document.getElementById('signatureModal').classList.remove('hidden');
+    }
+
+    function signFieldWithTyped() {
+      if (!currentFieldIdForModal) return;
+      const field = signatureFields.find(f => f.id === currentFieldIdForModal);
+      if (!field) return;
+      const typedValue = document.getElementById('typedSignatureInput').value.trim();
+      if (!typedValue) return alert("Enter signature");
+      field.signedData = { type: 'typed', html: typedValue };
+      addAudit(`✍️ Signed`);
+      closeModal();
+      renderDashboardContent();
+      checkDocumentCompletion();
+    }
+
+    function signFieldWithDraw() {
+      if (!currentFieldIdForModal) return;
+      const field = signatureFields.find(f => f.id === currentFieldIdForModal);
+      if (!field || !currentDrawDataUrl) return alert("Draw signature first");
+      field.signedData = { type: 'draw', imgData: currentDrawDataUrl };
+      addAudit(`🖌️ Drew signature`);
+      closeModal();
+      renderDashboardContent();
+      checkDocumentCompletion();
+    }
+
+    function checkDocumentCompletion() {
+      if (!currentUser) return;
+      const allSigned = signatureFields.length > 0 && signatureFields.every(f => f.signedData);
+      if (allSigned && signatureFields.length) {
+        if (!checkFairUseLimit()) return;
+        if (currentUser.plan === 'free') {
+          currentUser.docsRemaining--;
+          addAudit(`📄 Document signed! Free tier: ${currentUser.docsRemaining} of ${FREE_TIER_LIMIT} remaining.`);
+          if (currentUser.docsRemaining === 0) alert(`You've used all ${FREE_TIER_LIMIT} free documents! Upgrade to Pro.`);
+        } else if (currentUser.plan === 'unlimited') {
+          currentUser.monthlyDocCount++;
+          currentUser.docsRemaining = PRO_MONTHLY_LIMIT - currentUser.monthlyDocCount;
+          addAudit(`📄 Document signed. Monthly usage: ${currentUser.monthlyDocCount}/${PRO_MONTHLY_LIMIT}.`);
+        } else if (currentUser.plan === 'enterprise') {
+          addAudit(`📄 Document signed (Enterprise Plan).`);
+        }
+      }
+    }
+
+    function closeModal() { document.getElementById('signatureModal')?.classList.add('hidden'); currentFieldIdForModal = null; }
+
+    function initCanvasDrawing() {
+      canvasEl = document.getElementById('signCanvas');
+      if (!canvasEl) return;
+      canvasCtx = canvasEl.getContext('2d');
+      function resizeAndClear() { canvasEl.width = canvasEl.parentElement.clientWidth - 20; canvasEl.height = 150; canvasCtx.fillStyle = "white"; canvasCtx.fillRect(0, 0, canvasEl.width, canvasEl.height); canvasCtx.strokeStyle = "#333"; canvasCtx.lineWidth = 2; canvasCtx.lineCap = "round"; }
+      resizeAndClear(); window.addEventListener('resize', () => resizeAndClear());
+      let drawingFlag = false;
+      function getCoords(e) { const rect = canvasEl.getBoundingClientRect(); const scaleX = canvasEl.width / rect.width; const scaleY = canvasEl.height / rect.height; let clientX, clientY; if (e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; } else { clientX = e.clientX; clientY = e.clientY; } let x = (clientX - rect.left) * scaleX; let y = (clientY - rect.top) * scaleY; return { x: Math.min(Math.max(0, x), canvasEl.width), y: Math.min(Math.max(0, y), canvasEl.height) }; }
+      function start(e) { drawingFlag = true; const pos = getCoords(e); canvasCtx.beginPath(); canvasCtx.moveTo(pos.x, pos.y); canvasCtx.lineTo(pos.x, pos.y); canvasCtx.stroke(); e.preventDefault(); }
+      function draw(e) { if (!drawingFlag) return; const pos = getCoords(e); canvasCtx.lineTo(pos.x, pos.y); canvasCtx.stroke(); canvasCtx.beginPath(); canvasCtx.moveTo(pos.x, pos.y); e.preventDefault(); }
+      function stop() { drawingFlag = false; canvasCtx.beginPath(); currentDrawDataUrl = canvasEl.toDataURL(); }
+      canvasEl.addEventListener('mousedown', start); canvasEl.addEventListener('mousemove', draw); canvasEl.addEventListener('mouseup', stop); canvasEl.addEventListener('touchstart', start); canvasEl.addEventListener('touchmove', draw); canvasEl.addEventListener('touchend', stop);
+      document.getElementById('clearCanvasBtn')?.addEventListener('click', () => { canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height); canvasCtx.fillStyle = "white"; canvasCtx.fillRect(0, 0, canvasEl.width, canvasEl.height); currentDrawDataUrl = null; });
+    }
+
+    // RENDER FUNCTIONS
+    function renderApp() {
+      const root = document.getElementById('appRoot');
+      if (!root) return;
+      const header = renderHeader();
+      let mainContent = '';
+      if (activePage === 'home') mainContent = renderHomePage();
+      else if (activePage === 'pricing') mainContent = renderPricingPage();
+      else if (activePage === 'about') mainContent = renderAboutPage();
+      else if (activePage === 'privacy') mainContent = renderPrivacyPage();
+      else if (activePage === 'terms') mainContent = renderTermsPage();
+      else if (activePage === 'login') mainContent = renderLoginPage();
+      else if (activePage === 'signup') mainContent = renderSignupPage();
+      else if (activePage === 'templates') mainContent = renderTemplatesPage();
+      else if (activePage === 'dashboard') mainContent = renderDashboard();
+      else mainContent = '<div class="p-10 text-center">404</div>';
+      const footer = renderFooter();
+      root.innerHTML = `<div class="flex flex-col min-h-screen">${header} <main class="flex-grow">${mainContent}</main> ${footer}</div>`;
+      attachGlobalEvents();
+      if (activePage === 'dashboard') { initDashboardEvents(); initCanvasDrawing(); }
+      if (activePage === 'dashboard' && addFieldMode) document.getElementById('addModeBadge')?.classList.remove('hidden');
+      
+      const modal = document.getElementById('signatureModal');
+      if (modal && !modal.hasListener) { modal.hasListener = true; document.getElementById('closeModalBtn')?.addEventListener('click', closeModal); document.getElementById('applyTypedBtn')?.addEventListener('click', signFieldWithTyped); document.getElementById('applyDrawBtn')?.addEventListener('click', signFieldWithDraw); document.getElementById('typedTabBtn')?.addEventListener('click', () => { document.getElementById('typedPanel').classList.remove('hidden'); document.getElementById('drawPanel').classList.add('hidden'); }); document.getElementById('drawTabBtn')?.addEventListener('click', () => { document.getElementById('typedPanel').classList.add('hidden'); document.getElementById('drawPanel').classList.remove('hidden'); if(canvasCtx && canvasEl) canvasCtx.fillRect(0,0,canvasEl.width,canvasEl.height); }); }
+      
+      const affiliateModal = document.getElementById('affiliateModal');
+      if (affiliateModal && !affiliateModal.hasListener) {
+        affiliateModal.hasListener = true;
+        document.getElementById('closeAffiliateModalBtn')?.addEventListener('click', () => affiliateModal.classList.add('hidden'));
+        document.getElementById('closeAffiliateModalFooterBtn')?.addEventListener('click', () => affiliateModal.classList.add('hidden'));
+        affiliateModal.addEventListener('click', (e) => { if (e.target === affiliateModal) affiliateModal.classList.add('hidden'); });
+      }
+    }
+
+    function renderHeader() {
+      return `<header class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-30"><div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3"><div class="flex items-center gap-2 cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('navigate', {detail:'home'}))"><div class="bg-gradient-to-r from-blue-600 to-indigo-700 w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-file-signature text-white text-lg"></i></div><span class="font-bold text-xl tracking-tight"><span class="text-blue-600">Sign</span><span class="text-indigo-600">Proz</span></span><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Affiliate Program</span></div><div class="flex items-center gap-3 flex-wrap"><button data-nav="home" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Home</button><button data-nav="pricing" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Pricing</button><button data-nav="templates" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Templates</button>${currentUser ? `<span class="text-sm bg-blue-50 px-3 py-1 rounded-full"><i class="fas fa-user"></i> ${currentUser.email.split('@')[0]}</span><button id="logoutBtn" class="text-sm bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"><i class="fas fa-sign-out-alt"></i> Logout</button><button data-nav="dashboard" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">📄 Dashboard</button>` : `<button data-nav="login" class="text-gray-700 text-sm font-medium">Sign In</button><button data-nav="signup" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">Start Free</button>`}</div></div></header>`;
+    }
+
+    function renderFooter() { 
+      return `<footer class="bg-white border-t mt-12"><div class="max-w-7xl mx-auto px-4 py-6 text-xs text-gray-500 flex flex-wrap justify-between"><div>© 2026 SignProz Inc. | Earn 20-30% recurring affiliate commissions</div><div class="flex gap-4"><button data-nav="about" class="hover:text-blue-600">About</button><button data-nav="privacy" class="hover:text-blue-600">Privacy</button><button data-nav="terms" class="hover:text-blue-600">Terms</button></div></div></footer>`;
+    }
+
+    function renderHomePage() { 
+      return `<div class="max-w-6xl mx-auto px-4 py-12"><div class="text-center"><h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1><p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">Join the SignProz Affiliate Program and earn 20-30% recurring commission on every referral.</p><div class="mt-8 flex gap-4 justify-center"><button data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button><button id="viewProgramDetailsHomeBtn" class="border border-gray-300 px-6 py-3 rounded-xl font-medium">View Program Details</button></div><div class="mt-16 grid md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$12k+ in 3 Years</h3><p>Realistic part-time earnings projection.</p></div></div></div></div>`;
+    }
+
+    function renderPricingPage() { 
+      return `<div class="max-w-6xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold text-center">Simple, Transparent Pricing</h2><div class="grid md:grid-cols-3 gap-6 mt-10 max-w-5xl mx-auto"><div class="bg-white rounded-2xl shadow-md p-6 text-center pricing-card"><i class="fas fa-gift text-4xl text-blue-500"></i><h3 class="text-2xl font-bold mt-2">Free</h3><p class="text-gray-500">$0</p><ul class="mt-4 space-y-2 text-sm"><li>✓ ${FREE_TIER_LIMIT} total documents</li><li>✓ Basic audit trail</li></ul><button data-nav="signup" class="mt-6 w-full bg-blue-50 text-blue-700 py-2 rounded-xl">Start Free</button></div><div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl shadow-md p-6 text-center pricing-card border-2 border-indigo-200"><i class="fas fa-rocket text-4xl text-indigo-600"></i><h3 class="text-2xl font-bold mt-2">Pro</h3><p class="text-gray-500">$29 / month</p><ul class="mt-4 space-y-2 text-sm"><li>✓ ${PRO_MONTHLY_LIMIT} docs/month</li><li>✓ Templates + Bulk Send</li><li>✓ API Access</li></ul><button id="upgradeUnlimitedPricingBtn" class="mt-6 w-full btn-primary text-white py-2 rounded-xl">Choose Pro</button></div><div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl shadow-xl p-6 text-center pricing-card text-white"><i class="fas fa-building text-4xl text-purple-300"></i><h3 class="text-2xl font-bold mt-2">Enterprise</h3><p class="text-purple-200">$499 / month</p><ul class="mt-4 space-y-2 text-sm text-purple-100"><li>✓ Unlimited documents</li><li>✓ SLA + SSO</li><li>✓ White-labeling</li></ul><button id="upgradeEnterprisePricingBtn" class="mt-6 w-full bg-white text-purple-900 py-2 rounded-xl">Contact Sales</button></div></div></div>`;
+    }
+
+    function renderAboutPage() { return `<div class="max-w-3xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold">About SignProz</h2><p class="mt-4 text-gray-700">We're building the fairest eSignature platform with the best affiliate program in the industry. Earn 20-30% recurring commissions.</p></div>`; }
+    function renderPrivacyPage() { return `<div class="max-w-3xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold">Privacy Policy</h2><div class="mt-4"><p>Affiliate data is used solely for commission tracking.</p></div></div>`; }
+    function renderTermsPage() { return `<div class="max-w-3xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold">Terms & Conditions</h2><div class="mt-4"><p>Affiliate terms: 20-30% recurring commission, paid monthly.</p></div></div>`; }
+    function renderLoginPage() { return `<div class="max-w-md mx-auto px-4 py-16"><div class="bg-white rounded-2xl shadow-xl p-8"><h2 class="text-2xl font-bold">Sign in</h2><input type="email" id="loginEmail" placeholder="Email address" class="w-full border rounded-xl p-3 mt-4"><button id="doLoginBtn" class="w-full btn-primary text-white py-3 rounded-xl mt-4 font-semibold">Continue</button><p class="text-center mt-4 text-sm">No account? <button data-nav="signup" class="text-blue-600">Start free trial</button></p></div></div>`; }
+    function renderSignupPage() { return `<div class="max-w-md mx-auto px-4 py-16"><div class="bg-white rounded-2xl shadow-xl p-8"><h2 class="text-2xl font-bold">Create free account</h2><p class="text-gray-500 text-sm">Join our affiliate program and start earning today.</p><input type="email" id="signupEmail" placeholder="Email" class="w-full border rounded-xl p-3 mt-4"><input type="text" id="referralCode" placeholder="Referral code (optional)" class="w-full border rounded-xl p-3 mt-2"><button id="doSignupBtn" class="w-full btn-primary text-white py-3 rounded-xl mt-4 font-semibold">Sign Up & Get Affiliate Link</button></div></div>`; }
+    
+    function renderTemplatesPage() {
+      return `<div class="max-w-6xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold">Document Templates</h2><div class="grid md:grid-cols-3 gap-6 mt-8">${templates.map(t => `<div class="bg-white rounded-xl shadow-sm p-5 template-card border border-gray-200"><i class="fas fa-file-alt text-blue-500 text-2xl"></i><h3 class="font-bold text-lg mt-2">${t.name}</h3><button class="use-template-btn mt-3 text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full" data-id="${t.id}">Use template</button></div>`).join('')}</div></div>`;
+    }
+
+    function renderDashboard() {
+      if (!currentUser) return '<div class="p-10 text-center">Please login</div>';
+      const tier = getAffiliateTier(currentUser.referralCount);
+      const expectedPayout = (currentUser.paidReferrals || 0) * 5.80;
+      return `<div class="max-w-7xl mx-auto px-4 py-6"><div class="flex flex-wrap justify-between items-center mb-4"><div><h2 class="text-2xl font-bold">Affiliate Dashboard</h2><p class="text-sm text-gray-500">Welcome, ${currentUser.email} | Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded">${currentUser.affiliateCode}</strong></p></div><div class="flex gap-2"><button id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-link"></i> Copy Referral Link</button><button id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line"></i> Load Sample</button></div></div><div class="grid lg:grid-cols-12 gap-6"><div class="lg:col-span-5"><div class="referral-stats-card rounded-2xl p-6 shadow-sm"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals & Rewards</h3><button id="viewProgramDetailsBtn" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button><div class="grid grid-cols-2 gap-4 mt-2"><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">${currentUser.referralCount}</div><div class="text-xs text-gray-500">Total referrals</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-green-600">${currentUser.paidReferrals || 0}</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-blue-600">$${expectedPayout.toFixed(2)}</div><div class="text-xs text-gray-500">Expected payout</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div></div><div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span class="px-3 py-1 rounded-full text-white text-sm ${tier.color}">${tier.name} (${tier.commission}% commission)</span></div><div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div></div></div><div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-chart-line"></i> 3-Year Earnings Projection</h3><p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p><table class="w-full text-sm projection-table"><thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead><tbody><tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr><tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr></tbody></table><div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div></div></div><div class="mt-6"><div class="bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-file-signature"></i> Document Workspace</h3><div class="flex gap-2 mb-4"><button id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button><button id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button><button id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button></div><div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);"><div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Click "Add Signature Field" then click on this area to place signature tags.</p></div><div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div></div><div id="signersList" class="mt-3 flex flex-wrap gap-2"></div><button id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button><div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div></div></div></div>`;
+    }
+
+    function renderDashboardContent() {
+      if (activePage !== 'dashboard') return;
+      const referralsContainer = document.getElementById('referralsList');
+      if (referralsContainer && affiliateReferrals.length > 0) {
+        referralsContainer.innerHTML = affiliateReferrals.map(r => `<div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg text-sm"><div><span class="font-medium">${escapeHtml(r.email)}</span><div class="text-xs text-gray-400">${r.date}</div></div><div><span class="px-2 py-0.5 rounded-full text-xs ${r.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${r.status === 'active' ? 'Active' : 'Pending'}</span></div><div class="text-green-600 font-semibold">$${r.earnings.toFixed(2)}</div></div>`).join('');
+      }
+      
+      const fieldsContainer = document.getElementById('dynamicFieldsContainer');
+      if (fieldsContainer) renderFieldsOnDocument(fieldsContainer);
+      
+      const signersContainer = document.getElementById('signersList');
+      if (signersContainer && signers.length) {
+        signersContainer.innerHTML = signers.map(s => `<span class="bg-gray-100 px-2 py-1 rounded-full text-xs">${escapeHtml(s.name)} <button class="remove-signer-dash text-red-400 ml-1" data-id="${s.id}"><i class="fas fa-times"></i></button></span>`).join('');
+        document.querySelectorAll('.remove-signer-dash').forEach(btn => btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-id'); signers = signers.filter(s => s.id !== id); renderDashboardContent(); }));
+      }
+    }
+
+    function initDashboardEvents() {
+      const container = document.getElementById('documentPreview');
+      if (!container) return;
+      
+      const toggleBtn = document.getElementById('toggleAddModeBtn');
+      if (toggleBtn) toggleBtn.onclick = () => { addFieldMode = !addFieldMode; document.getElementById('addModeBadge')?.classList.toggle('hidden'); };
+      
+      const sendBtn = document.getElementById('sendDocBtn');
+      if (sendBtn) sendBtn.onclick = () => { if (signatureFields.length === 0) alert('Add signature fields first'); else checkDocumentCompletion(); };
+      
+      const resetBtn = document.getElementById('resetDocumentBtn');
+      if (resetBtn) resetBtn.onclick = () => { signatureFields = []; renderDashboardContent(); addAudit("Reset document fields."); };
+      
+      const copyBtn = document.getElementById('copyAffiliateLinkBtn');
+      if (copyBtn) copyBtn.onclick = () => { const link = `https://signflow.app/?ref=${currentUser.affiliateCode}`; navigator.clipboard.writeText(link); alert('Referral link copied! Share it to earn 20-30% recurring commissions.'); };
+      
+      const sampleBtn = document.getElementById('sampleDataBtn');
+      if (sampleBtn) sampleBtn.onclick = () => loadSampleAffiliateData();
+      
+      document.getElementById('addSignerBtn')?.addEventListener('click', () => { let name = prompt("Signer name"); if(name) signers.push({ id: genId(), name, email: name.toLowerCase()+'@example.com' }); renderDashboardContent(); });
+      
+      container.addEventListener('click', (e) => { if(!addFieldMode) return; const rect = document.getElementById('dynamicFieldsContainer').getBoundingClientRect(); const x = ((e.clientX - rect.left)/rect.width)*100; const y = ((e.clientY - rect.top)/rect.height)*100; if(x>=0 && x<=100 && y>=0 && y<=100) addSignatureFieldAt(x,y); });
+      
+      renderDashboardContent();
+    }
+
+    function attachGlobalEvents() {
+      document.querySelectorAll('.nav-link, [data-nav]').forEach(el => { if(!el.hasListener) { el.addEventListener('click', (e) => { const page = el.getAttribute('data-nav'); if(page) setActivePage(page); }); el.hasListener=true; } });
+      document.querySelectorAll('.use-template-btn').forEach(el => { if(!el.hasListener) { el.addEventListener('click', (e) => { const tid = el.getAttribute('data-id'); if(tid && currentUser) { loadTemplate(tid); setActivePage('dashboard'); } else if(tid && !currentUser) alert('Please sign in first'); }); el.hasListener=true; } });
+      
+      const viewProgramBtns = ['viewProgramDetailsHomeBtn', 'viewProgramDetailsBtn'];
+      viewProgramBtns.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn && !btn.hasListener) { btn.addEventListener('click', () => document.getElementById('affiliateModal').classList.remove('hidden')); btn.hasListener = true; }
+      });
+      
+      const logout = document.getElementById('logoutBtn'); if(logout && !logout.hasListener) { logout.addEventListener('click', handleLogout); logout.hasListener=true; }
+      const loginBtn = document.getElementById('doLoginBtn'); if(loginBtn) loginBtn.onclick = () => { const email = document.getElementById('loginEmail')?.value; if(email) handleLogin(email); };
+      const signupBtn = document.getElementById('doSignupBtn'); if(signupBtn) signupBtn.onclick = () => { const email = document.getElementById('signupEmail')?.value; if(email) handleSignup(email, 'pass', 'free'); };
+      const upgradePricing = document.getElementById('upgradeUnlimitedPricingBtn'); if(upgradePricing) upgradePricing.onclick = () => { if(currentUser) upgradeToUnlimited(); else alert("Sign up first"); };
+      const upgradeEnterprise = document.getElementById('upgradeEnterprisePricingBtn'); if(upgradeEnterprise) upgradeEnterprise.onclick = () => { if(currentUser) upgradeToEnterprise(); else alert("Sign up first"); };
+    }
+
+    window.addEventListener('popstate', () => { const hash = window.location.hash.slice(1); setActivePage(hash || 'home', false); });
+    window.addEventListener('navigate', (e) => setActivePage(e.detail));
+    renderApp();
+  </script>
+</body>
+</html>
