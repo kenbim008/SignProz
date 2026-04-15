@@ -102,8 +102,20 @@
 
   <script>
     // ----------------------- STATE & GLOBAL -----------------------
+    const KNOWN_PAGES = new Set(['home', 'pricing', 'about', 'privacy', 'terms', 'login', 'signup', 'templates', 'dashboard']);
+
+    function syncRouteFromHash() {
+      let page = (window.location.hash || '').replace(/^#/, '').trim();
+      if (!page) page = 'home';
+      if (!KNOWN_PAGES.has(page)) {
+        page = 'home';
+        window.history.replaceState({ page: 'home' }, '', '#home');
+      }
+      return page;
+    }
+
     let currentUser = null;
-    let activePage = 'home';
+    let activePage = syncRouteFromHash();
     let signatureFields = [];
     let signers = [];
     let auditLog = [];
@@ -130,6 +142,7 @@
     let bulkQueue = [];
     
     function setActivePage(page, pushState = true) {
+      if (!page || !KNOWN_PAGES.has(page)) page = 'home';
       activePage = page;
       renderApp();
       if (pushState) window.history.pushState({ page }, '', `#${page}`);
@@ -436,7 +449,7 @@
       else if (activePage === 'signup') mainContent = renderSignupPage();
       else if (activePage === 'templates') mainContent = renderTemplatesPage();
       else if (activePage === 'dashboard') mainContent = renderDashboard();
-      else mainContent = '<div class="p-10 text-center">404</div>';
+      else mainContent = '<div class="max-w-lg mx-auto px-4 py-20 text-center"><p class="text-6xl font-extrabold text-gray-200">404</p><h1 class="text-xl font-semibold text-gray-800 mt-2">Page not found</h1><p class="text-gray-500 text-sm mt-2">That link is not part of SignProz.</p><button type="button" data-nav="home" class="mt-6 btn-primary text-white px-6 py-2 rounded-xl font-medium">Back to home</button></div>';
       const footer = renderFooter();
       root.innerHTML = `<div class="flex flex-col min-h-screen">${header} <main class="flex-grow">${mainContent}</main> ${footer}</div>`;
       attachGlobalEvents();
@@ -548,7 +561,8 @@
       const upgradeEnterprise = document.getElementById('upgradeEnterprisePricingBtn'); if(upgradeEnterprise) upgradeEnterprise.onclick = () => { if(currentUser) upgradeToEnterprise(); else alert("Sign up first"); };
     }
 
-    window.addEventListener('popstate', () => { const hash = window.location.hash.slice(1); setActivePage(hash || 'home', false); });
+    window.addEventListener('popstate', () => { setActivePage(syncRouteFromHash(), false); });
+    window.addEventListener('hashchange', () => { setActivePage(syncRouteFromHash(), false); });
     window.addEventListener('navigate', (e) => setActivePage(e.detail));
     renderApp();
   </script>
