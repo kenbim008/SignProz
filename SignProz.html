@@ -102,7 +102,7 @@
 
   <script>
     // ----------------------- STATE & GLOBAL -----------------------
-    const KNOWN_PAGES = new Set(['home', 'pricing', 'about', 'privacy', 'terms', 'login', 'signup', 'templates', 'dashboard']);
+    const KNOWN_PAGES = new Set(['home', 'pricing', 'about', 'privacy', 'terms', 'login', 'signup', 'templates', 'dashboard', 'affiliate', 'demo']);
 
     function syncRouteFromHash() {
       let page = (window.location.hash || '').replace(/^#/, '').trim();
@@ -493,6 +493,8 @@
       else if (activePage === 'signup') mainContent = renderSignupPage();
       else if (activePage === 'templates') mainContent = renderTemplatesPage();
       else if (activePage === 'dashboard') mainContent = renderDashboard();
+      else if (activePage === 'affiliate') mainContent = renderAffiliatePage();
+      else if (activePage === 'demo') mainContent = renderDemoPage();
       else mainContent = '<div class="max-w-lg mx-auto px-4 py-20 text-center"><p class="text-6xl font-extrabold text-gray-200">404</p><h1 class="text-xl font-semibold text-gray-800 mt-2">Page not found</h1><p class="text-gray-500 text-sm mt-2">That link is not part of SignProz.</p><button type="button" data-nav="home" class="mt-6 btn-primary text-white px-6 py-2 rounded-xl font-medium">Back to home</button></div>';
       const footer = renderFooter();
       root.innerHTML = `<div class="flex flex-col min-h-screen">${header} <main class="flex-grow">${mainContent}</main> ${footer}</div>`;
@@ -513,11 +515,11 @@
     }
 
     function renderHeader() {
-      return `<header class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-30"><div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3"><div class="flex items-center gap-2 cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('navigate', {detail:'home'}))"><div class="bg-gradient-to-r from-blue-600 to-indigo-700 w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-file-signature text-white text-lg"></i></div><span class="font-bold text-xl tracking-tight"><span class="text-blue-600">Sign</span><span class="text-indigo-600">Proz</span></span><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Affiliate Program</span></div><div class="flex items-center gap-3 flex-wrap"><button data-nav="home" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Home</button><button data-nav="pricing" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Pricing</button><button data-nav="templates" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Templates</button>${currentUser ? `<span class="text-sm bg-blue-50 px-3 py-1 rounded-full"><i class="fas fa-user"></i> ${currentUser.email.split('@')[0]}</span><button id="logoutBtn" class="text-sm bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"><i class="fas fa-sign-out-alt"></i> Logout</button><button data-nav="dashboard" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">📄 Dashboard</button>` : `<button data-nav="login" class="text-gray-700 text-sm font-medium">Sign In</button><button data-nav="signup" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">Start Free</button>`}</div></div></header>`;
+      return `<header class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-30"><div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3"><div class="flex items-center gap-2 flex-wrap"><div class="flex items-center gap-2 cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('navigate', {detail:'home'}))"><div class="bg-gradient-to-r from-blue-600 to-indigo-700 w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-file-signature text-white text-lg"></i></div><span class="font-bold text-xl tracking-tight"><span class="text-blue-600">Sign</span><span class="text-indigo-600">Proz</span></span></div><button type="button" data-nav="affiliate" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full hover:bg-green-200 font-medium">Affiliate Program</button></div><div class="flex items-center gap-3 flex-wrap"><button type="button" data-nav="home" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Home</button><button type="button" data-nav="pricing" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Pricing</button><button type="button" data-nav="templates" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Templates</button><button type="button" data-nav="demo" class="nav-link text-blue-600 hover:text-blue-800 text-sm font-medium">Demo</button>${currentUser ? `<span class="text-sm bg-blue-50 px-3 py-1 rounded-full"><i class="fas fa-user"></i> ${currentUser.email.split('@')[0]}</span><button type="button" id="logoutBtn" class="text-sm bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"><i class="fas fa-sign-out-alt"></i> Logout</button><button type="button" data-nav="dashboard" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">📄 Dashboard</button>` : `<button type="button" data-nav="login" class="text-gray-700 text-sm font-medium">Sign In</button><button type="button" data-nav="signup" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">Start Free</button>`}</div></div></header>`;
     }
 
     function renderFooter() {
-      return `<footer class="bg-white border-t mt-12"><div class="max-w-7xl mx-auto px-4 py-6 text-xs text-gray-500 flex flex-wrap justify-between items-center gap-4"><div>© 2026 SignProz Inc. | Earn 20-30% recurring affiliate commissions</div><nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label="Legal"><button type="button" data-nav="about" class="text-left hover:text-blue-600 underline-offset-2 hover:underline">About Us</button><button type="button" data-nav="privacy" class="text-left hover:text-blue-600 underline-offset-2 hover:underline">Privacy Policy</button><button type="button" data-nav="terms" class="text-left hover:text-blue-600 underline-offset-2 hover:underline">Terms &amp; Conditions</button></nav></div></footer>`;
+      return `<footer class="bg-white border-t mt-12"><div class="max-w-7xl mx-auto px-4 py-6 text-xs text-gray-500 flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4"><div>© 2026 SignProz Inc. | Earn 20-30% recurring affiliate commissions</div><nav class="flex flex-wrap gap-x-5 gap-y-2 items-center" aria-label="Footer"><button type="button" data-nav="affiliate" class="text-left text-blue-600 font-medium hover:text-blue-800 underline-offset-2 hover:underline">Affiliate program</button><button type="button" data-nav="demo" class="text-left text-blue-600 font-medium hover:text-blue-800 underline-offset-2 hover:underline">Demo</button><span class="hidden sm:inline text-gray-300" aria-hidden="true">|</span><button type="button" data-nav="about" class="text-left hover:text-blue-600 underline-offset-2 hover:underline">About Us</button><button type="button" data-nav="privacy" class="text-left hover:text-blue-600 underline-offset-2 hover:underline">Privacy Policy</button><button type="button" data-nav="terms" class="text-left hover:text-blue-600 underline-offset-2 hover:underline">Terms &amp; Conditions</button></nav></div></footer>`;
     }
 
     function renderLegalArticle(title, bodyHtml) {
@@ -525,7 +527,229 @@
     }
 
     function renderHomePage() { 
-      return `<div class="max-w-6xl mx-auto px-4 py-12"><div class="text-center"><h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1><p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">Join the SignProz Affiliate Program and earn 20-30% recurring commission on every referral.</p><div class="mt-8 flex gap-4 justify-center"><button data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button><button id="viewProgramDetailsHomeBtn" class="border border-gray-300 px-6 py-3 rounded-xl font-medium">View Program Details</button></div><div class="mt-16 grid md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$12k+ in 3 Years</h3><p>Realistic part-time earnings projection.</p></div></div></div></div>`;
+      return `<div class="max-w-6xl mx-auto px-4 py-12"><div class="text-center"><h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1><p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">Join the SignProz Affiliate Program and earn 20-30% recurring commission on every referral.</p><div class="mt-8 flex flex-wrap gap-4 justify-center"><button type="button" data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button><button type="button" data-nav="affiliate" class="border border-gray-300 px-6 py-3 rounded-xl font-medium hover:border-blue-300 hover:text-blue-700">View Program Details</button><button type="button" data-nav="demo" class="text-blue-600 border border-blue-200 bg-blue-50 px-6 py-3 rounded-xl font-medium hover:bg-blue-100">Product demo</button></div><div class="mt-16 grid md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$12k+ in 3 Years</h3><p>Realistic part-time earnings projection.</p></div></div></div></div>`;
+    }
+
+    function renderAffiliatePage() {
+      const rp = revenueProjection;
+      return `<div class="max-w-6xl mx-auto px-4 py-16 font-sans text-slate-800">
+        <button type="button" data-nav="home" class="text-sm font-medium text-blue-600 hover:text-blue-800 mb-8">← Back to home</button>
+        <div class="text-center mb-16">
+          <h1 class="text-4xl font-bold mb-4 text-slate-900">SignProz Affiliate Program</h1>
+          <p class="text-xl text-slate-600 max-w-2xl mx-auto">Share SignProz. Earn recurring commissions when referrals upgrade.</p>
+          <div class="mt-8 p-6 bg-blue-50 border border-blue-100 rounded-xl inline-block max-w-2xl">
+            <p class="text-blue-800 font-medium">Earn <span class="font-bold text-blue-600">20–30% recurring commission</span> for every customer you refer. No cap, lifetime earnings.</p>
+          </div>
+        </div>
+        <section class="mb-20">
+          <div class="flex items-center gap-2 mb-8 justify-center lg:justify-start">
+            <i class="fas fa-chart-line text-green-500 text-2xl"></i>
+            <h2 class="text-2xl font-bold text-slate-900">How It Works</h2>
+          </div>
+          <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center relative pt-10">
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+              <div class="mb-4 flex justify-center text-blue-500 text-3xl"><i class="fas fa-share-alt"></i></div>
+              <p class="font-medium text-slate-700">Share your unique referral link</p>
+            </div>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center relative pt-10">
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+              <div class="mb-4 flex justify-center text-blue-500 text-3xl"><i class="fas fa-user-check"></i></div>
+              <p class="font-medium text-slate-700">Friend signs up &amp; upgrades to Pro/Enterprise</p>
+            </div>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center relative pt-10">
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+              <div class="mb-4 flex justify-center text-blue-500 text-3xl"><i class="fas fa-award"></i></div>
+              <p class="font-medium text-slate-700">You earn 20–30% monthly recurring commission</p>
+            </div>
+          </div>
+        </section>
+        <section class="mb-20">
+          <div class="flex items-center gap-2 mb-8 justify-center lg:justify-start">
+            <i class="fas fa-trophy text-yellow-500 text-2xl"></i>
+            <h2 class="text-2xl font-bold text-slate-900">Affiliate Tiers</h2>
+          </div>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="p-6 rounded-xl border-2 text-center transition-transform hover:scale-105 bg-orange-100 text-orange-700 border-orange-200">
+              <div class="text-xs font-bold uppercase tracking-widest mb-1 opacity-70">Tier</div>
+              <h3 class="text-2xl font-black mb-2">Bronze</h3>
+              <p class="text-sm font-medium mb-1">0–4 referrals</p>
+              <p class="text-3xl font-bold">20%</p>
+              <p class="text-[10px] mt-2 opacity-80 uppercase tracking-tighter">Commission</p>
+            </div>
+            <div class="p-6 rounded-xl border-2 text-center transition-transform hover:scale-105 bg-slate-100 text-slate-700 border-slate-200">
+              <div class="text-xs font-bold uppercase tracking-widest mb-1 opacity-70">Tier</div>
+              <h3 class="text-2xl font-black mb-2">Silver</h3>
+              <p class="text-sm font-medium mb-1">5–14 referrals</p>
+              <p class="text-3xl font-bold">22%</p>
+              <p class="text-[10px] mt-2 opacity-80 uppercase tracking-tighter">Commission</p>
+            </div>
+            <div class="p-6 rounded-xl border-2 text-center transition-transform hover:scale-105 bg-yellow-100 text-yellow-700 border-yellow-200">
+              <div class="text-xs font-bold uppercase tracking-widest mb-1 opacity-70">Tier</div>
+              <h3 class="text-2xl font-black mb-2">Gold</h3>
+              <p class="text-sm font-medium mb-1">15–49 referrals</p>
+              <p class="text-3xl font-bold">25%</p>
+              <p class="text-[10px] mt-2 opacity-80 uppercase tracking-tighter">Commission</p>
+            </div>
+            <div class="p-6 rounded-xl border-2 text-center transition-transform hover:scale-105 bg-blue-100 text-blue-700 border-blue-200">
+              <div class="text-xs font-bold uppercase tracking-widest mb-1 opacity-70">Tier</div>
+              <h3 class="text-2xl font-black mb-2">Platinum</h3>
+              <p class="text-sm font-medium mb-1">50+ referrals</p>
+              <p class="text-3xl font-bold">30%</p>
+              <p class="text-[10px] mt-2 opacity-80 uppercase tracking-tighter">Commission</p>
+            </div>
+          </div>
+        </section>
+        <section class="mb-8">
+          <div class="flex items-center gap-2 mb-6 justify-center lg:justify-start">
+            <i class="fas fa-table text-indigo-600 text-2xl"></i>
+            <h2 class="text-2xl font-bold text-slate-900">3-Year Revenue Projection</h2>
+          </div>
+          <p class="text-sm text-slate-600 max-w-3xl mb-6 text-center lg:text-left">Illustrative earnings based on realistic part-time effort (about 1–2 hours per week), 20% base commission rising toward 30% as you tier up. Not a guarantee—your results depend on audience and effort.</p>
+          <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table class="w-full text-sm projection-table min-w-[640px]">
+              <thead><tr class="bg-slate-50 text-left"><th class="p-3 font-semibold text-slate-700">Year</th><th class="p-3 font-semibold text-slate-700">New referrals</th><th class="p-3 font-semibold text-slate-700">Cumulative referrals</th><th class="p-3 font-semibold text-slate-700">Projected earnings</th><th class="p-3 font-semibold text-slate-700">Avg / month</th><th class="p-3 font-semibold text-slate-700">Run-rate (end of year)</th></tr></thead>
+              <tbody>
+                <tr class="border-t border-slate-100"><td class="p-3 font-medium">Year 1</td><td class="p-3">${rp.year1.newReferrals}</td><td class="p-3">${rp.year1.totalReferrals}</td><td class="p-3 text-green-700 font-semibold">$${rp.year1.earnings.toLocaleString()}</td><td class="p-3">$${rp.year1.avgMonthly}</td><td class="p-3">$${rp.year1.endMonthly}/mo</td></tr>
+                <tr class="border-t border-slate-100"><td class="p-3 font-medium">Year 2</td><td class="p-3">${rp.year2.newReferrals}</td><td class="p-3">${rp.year2.totalReferrals}</td><td class="p-3 text-green-700 font-semibold">$${rp.year2.earnings.toLocaleString()}</td><td class="p-3">$${rp.year2.avgMonthly}</td><td class="p-3">$${rp.year2.endMonthly}/mo</td></tr>
+                <tr class="border-t border-slate-100"><td class="p-3 font-medium">Year 3</td><td class="p-3">${rp.year3.newReferrals}</td><td class="p-3">${rp.year3.totalReferrals}</td><td class="p-3 text-green-700 font-semibold">$${rp.year3.earnings.toLocaleString()}</td><td class="p-3">$${rp.year3.avgMonthly}</td><td class="p-3">$${rp.year3.endMonthly}/mo</td></tr>
+                <tr class="bg-blue-50 border-t border-blue-100"><td class="p-3 font-bold text-slate-900">3-year total</td><td class="p-3">—</td><td class="p-3 font-bold">${rp.total.referrals}</td><td class="p-3 font-bold text-blue-800">$${rp.total.earnings.toLocaleString()}</td><td class="p-3">—</td><td class="p-3 font-bold text-blue-800">~$${rp.year3.endMonthly}/mo</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <div class="text-center pb-8"><button type="button" data-nav="signup" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold shadow">Get your referral link</button></div>
+      </div>`;
+    }
+
+    function renderDemoPage() {
+      return `<div class="max-w-6xl mx-auto px-4 py-10 pb-20 text-slate-800">
+        <button type="button" data-nav="home" class="text-sm font-medium text-blue-600 hover:text-blue-800 mb-6">← Back to home</button>
+        <div class="rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-700 text-white p-8 mb-12 shadow-xl">
+          <p class="text-xs font-semibold uppercase tracking-widest text-indigo-200 mb-2">Interactive product tour</p>
+          <h1 class="text-3xl sm:text-4xl font-bold mb-3">SignProz feature demo</h1>
+          <p class="text-indigo-100 max-w-2xl text-sm sm:text-base leading-relaxed">Below is a <strong class="text-white">static walkthrough</strong> of what subscribers and admins see: dashboard &amp; affiliate earnings, a mock admin backend, document signing with audit trail, and send/receipt notifications. Use <strong class="text-white">Sign In</strong> with any email, then open the <strong class="text-white">Dashboard</strong> to try signing, templates, and live referral API stats (when configured).</p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button type="button" data-nav="login" class="bg-white text-indigo-700 px-5 py-2.5 rounded-xl font-semibold text-sm shadow hover:bg-indigo-50">Try live dashboard</button>
+            <button type="button" data-nav="templates" class="bg-indigo-500/80 border border-white/30 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-500">Browse templates</button>
+            <button type="button" data-nav="affiliate" class="bg-indigo-500/80 border border-white/30 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-500">Affiliate program</button>
+          </div>
+        </div>
+
+        <section class="mb-14">
+          <h2 class="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2"><i class="fas fa-chart-pie text-blue-600"></i> Subscriber dashboard</h2>
+          <p class="text-sm text-slate-600 mb-6">Referral code, tier, expected payout, and 3-year projection—mirrors the signed-in experience.</p>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6 shadow-inner">
+            <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+              <div><p class="text-xs text-slate-500">Logged in as</p><p class="font-semibold text-slate-900">demo.user@signproz.com</p><p class="text-xs text-slate-500 mt-1">Plan: <span class="text-green-700 font-medium">Pro</span></p></div>
+              <div class="text-right"><p class="text-xs text-slate-500">Your referral code</p><p class="font-mono font-bold text-lg text-blue-700">SF-DEMO01</p><button type="button" class="text-xs text-blue-600 mt-1" disabled title="Live on real dashboard">Copy link (live)</button></div>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div class="bg-white rounded-xl p-4 border border-slate-100 text-center"><div class="text-2xl font-bold text-slate-800">12</div><div class="text-xs text-slate-500">Total referrals</div></div>
+              <div class="bg-white rounded-xl p-4 border border-slate-100 text-center"><div class="text-2xl font-bold text-green-600">8</div><div class="text-xs text-slate-500">Active (paid)</div></div>
+              <div class="bg-white rounded-xl p-4 border border-slate-100 text-center"><div class="text-2xl font-bold text-blue-600">$184.20</div><div class="text-xs text-slate-500">Expected payout</div></div>
+              <div class="bg-white rounded-xl p-4 border border-slate-100 text-center"><span class="inline-block px-3 py-1 rounded-full text-white text-sm tier-gold">Gold (25%)</span><div class="text-xs text-slate-500 mt-2">Affiliate tier</div></div>
+            </div>
+            <p class="text-xs text-slate-500 mb-2">Recent referral activity</p>
+            <div class="bg-white rounded-xl border border-slate-100 divide-y divide-slate-100 text-sm">
+              <div class="flex justify-between p-3"><span>alex@company.com</span><span class="text-green-600 font-medium">Pro · +$7.25/mo</span></div>
+              <div class="flex justify-between p-3"><span>sam@startup.io</span><span class="text-amber-600 font-medium">Pending invite</span></div>
+              <div class="flex justify-between p-3"><span>legal@enterprise.co</span><span class="text-green-600 font-medium">Enterprise · +$124.75/mo</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-14">
+          <h2 class="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2"><i class="fas fa-server text-purple-600"></i> Backend &amp; admin (demo)</h2>
+          <p class="text-sm text-slate-600 mb-6">Illustrative admin console: user directory, plan overrides, webhook delivery log, and system health—typical of a hosted SignProz deployment.</p>
+          <div class="grid lg:grid-cols-12 gap-4">
+            <aside class="lg:col-span-3 rounded-xl bg-slate-900 text-slate-200 p-4 text-sm space-y-2">
+              <div class="font-bold text-white mb-3">Admin</div>
+              <div class="bg-white/10 rounded-lg px-3 py-2 text-white">Overview</div>
+              <div class="px-3 py-2 hover:bg-white/5 rounded-lg">Users &amp; plans</div>
+              <div class="px-3 py-2 hover:bg-white/5 rounded-lg">Documents</div>
+              <div class="px-3 py-2 hover:bg-white/5 rounded-lg">Affiliate payouts</div>
+              <div class="px-3 py-2 hover:bg-white/5 rounded-lg">Webhooks / API</div>
+              <div class="px-3 py-2 hover:bg-white/5 rounded-lg">Audit export</div>
+            </aside>
+            <div class="lg:col-span-9 space-y-4">
+              <div class="grid sm:grid-cols-3 gap-3">
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4"><p class="text-xs text-emerald-700 font-semibold">API</p><p class="text-2xl font-bold text-emerald-800">99.98%</p><p class="text-xs text-emerald-600">30d uptime</p></div>
+                <div class="bg-amber-50 border border-amber-100 rounded-xl p-4"><p class="text-xs text-amber-800 font-semibold">Queue</p><p class="text-2xl font-bold text-amber-900">0</p><p class="text-xs text-amber-700">Failed jobs</p></div>
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4"><p class="text-xs text-blue-800 font-semibold">Storage</p><p class="text-2xl font-bold text-blue-900">42%</p><p class="text-xs text-blue-700">Signed PDFs</p></div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                <div class="px-4 py-2 bg-slate-50 border-b text-xs font-semibold text-slate-600">Users (sample)</div>
+                <table class="w-full text-xs sm:text-sm"><thead><tr class="text-left text-slate-500 border-b"><th class="p-3">Email</th><th class="p-3">Plan</th><th class="p-3">Docs / mo</th><th class="p-3">Role</th></tr></thead><tbody>
+                  <tr class="border-b border-slate-50"><td class="p-3 font-mono">admin@signproz.com</td><td class="p-3">Enterprise</td><td class="p-3">Unlimited</td><td class="p-3"><span class="text-purple-600 font-medium">Super admin</span></td></tr>
+                  <tr class="border-b border-slate-50"><td class="p-3 font-mono">demo.user@signproz.com</td><td class="p-3">Pro</td><td class="p-3">142 / 200</td><td class="p-3">Member</td></tr>
+                  <tr><td class="p-3 font-mono">api_integration@partner.com</td><td class="p-3">API</td><td class="p-3">12k calls</td><td class="p-3">Service</td></tr>
+                </tbody></table>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-semibold text-slate-600 mb-2">Webhook delivery log</p>
+                <ul class="text-xs font-mono space-y-1 text-slate-700">
+                  <li><span class="text-green-600">200</span> document.completed → https://api.partner.com/hooks/spz <span class="text-slate-400">124ms</span></li>
+                  <li><span class="text-green-600">200</span> signer.viewed → https://api.partner.com/hooks/spz <span class="text-slate-400">98ms</span></li>
+                  <li><span class="text-amber-600">429</span> affiliate.payout.scheduled → https://api.partner.com/hooks/spz <span class="text-slate-400">retry 1/5</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-14">
+          <h2 class="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2"><i class="fas fa-file-signature text-blue-600"></i> Document signing &amp; audit trail</h2>
+          <p class="text-sm text-slate-600 mb-6">Each field records who signed, when, and IP/device class. Completed packets export with immutable audit log.</p>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="rounded-xl border-2 border-dashed border-blue-200 bg-white p-6 min-h-[220px] relative" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px); background-size: 8px 8px;">
+              <p class="text-center text-xs text-slate-400 mb-4">Sample agreement — Signer view</p>
+              <div class="absolute left-[18%] top-[38%] -translate-x-1/2 -translate-y-1/2 bg-green-50 border-2 border-green-500 rounded-lg px-3 py-2 text-center text-xs shadow"><span class="text-green-700 font-semibold">✓ Signed</span><br><span class="font-serif italic text-sm">Alex Rivera</span></div>
+              <div class="absolute right-[22%] top-[55%] translate-x-1/2 border-2 border-dashed border-blue-400 rounded-lg px-3 py-2 text-center text-xs bg-amber-50/90"><span class="text-amber-800 font-semibold">Pending</span><br>Legal counsel</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+              <p class="text-xs font-semibold text-slate-600 mb-3"><i class="fas fa-list-ul text-blue-500 mr-1"></i> Audit trail (excerpt)</p>
+              <ol class="text-xs space-y-3 border-l-2 border-blue-200 pl-4">
+                <li><span class="text-slate-400">2026-04-20 09:12</span> — Document created · <span class="text-slate-700">Owner: demo.user@signproz.com</span></li>
+                <li><span class="text-slate-400">2026-04-20 09:14</span> — Invite sent to <span class="font-mono">alex@company.com</span> <span class="text-blue-600">(email)</span></li>
+                <li><span class="text-slate-400">2026-04-20 14:02</span> — Signer opened link · <span class="text-slate-600">Chrome · US-East</span></li>
+                <li><span class="text-slate-400">2026-04-20 14:08</span> — Field “Employee signature” completed · typed signature · <span class="text-green-700 font-medium">eIDAS-ready hash logged</span></li>
+                <li><span class="text-slate-400">2026-04-20 14:09</span> — Certificate of completion generated</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-14">
+          <h2 class="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2"><i class="fas fa-envelope-open-text text-teal-600"></i> Send &amp; receipt notifications</h2>
+          <p class="text-sm text-slate-600 mb-6">Email and in-app alerts for every stage: invite, reminder before expiry, viewed, signed, and final PDF receipt to all parties.</p>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p class="text-xs font-bold text-slate-500 uppercase mb-3">Outbox (sent)</p>
+              <ul class="text-sm space-y-3">
+                <li class="flex gap-3"><span class="text-teal-600"><i class="fas fa-paper-plane"></i></span><div><p class="font-medium text-slate-800">Signature requested</p><p class="text-xs text-slate-500">To: alex@company.com · Apr 20, 9:14 AM</p></div></li>
+                <li class="flex gap-3"><span class="text-amber-500"><i class="fas fa-bell"></i></span><div><p class="font-medium text-slate-800">Reminder: sign before Apr 27</p><p class="text-xs text-slate-500">To: legal@enterprise.co · Apr 23, 8:00 AM</p></div></li>
+                <li class="flex gap-3"><span class="text-blue-600"><i class="fas fa-file-export"></i></span><div><p class="font-medium text-slate-800">Completed PDF + audit pack</p><p class="text-xs text-slate-500">To: all signers · Apr 20, 2:10 PM</p></div></li>
+              </ul>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <p class="text-xs font-bold text-slate-500 uppercase mb-3">Inbox (received)</p>
+              <ul class="text-sm space-y-3">
+                <li class="flex gap-3"><span class="text-slate-400"><i class="fas fa-inbox"></i></span><div><p class="font-medium text-slate-800">Receipt: document viewed</p><p class="text-xs text-slate-500">You were notified when the signer opened the envelope.</p></div></li>
+                <li class="flex gap-3"><span class="text-green-600"><i class="fas fa-check-circle"></i></span><div><p class="font-medium text-slate-800">Receipt: signature captured</p><p class="text-xs text-slate-500">Field-level hash stored · SMS optional on Enterprise</p></div></li>
+                <li class="flex gap-3"><span class="text-indigo-600"><i class="fas fa-shield-halved"></i></span><div><p class="font-medium text-slate-800">Security alert</p><p class="text-xs text-slate-500">New device login · Arlington, VA (acknowledged)</p></div></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <div class="rounded-2xl border border-blue-200 bg-blue-50/80 p-6 text-center">
+          <p class="text-slate-800 font-medium mb-4">Ready to use the real signing workspace, API stats, and templates?</p>
+          <button type="button" data-nav="login" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold shadow mr-2 mb-2">Sign in to try</button>
+          <button type="button" data-nav="dashboard" class="border border-blue-300 text-blue-800 bg-white px-8 py-3 rounded-xl font-semibold mb-2">Open dashboard</button>
+          <p class="text-xs text-slate-600 mt-3 max-w-md mx-auto">If you are not signed in, the dashboard will prompt you to log in. Use any email on the demo sign-in screen.</p>
+        </div>
+      </div>`;
     }
 
     function renderPricingPage() { 
@@ -583,7 +807,7 @@
 
     function renderDashboard() {
       if (!currentUser) return '<div class="p-10 text-center">Please login</div>';
-      return `<div class="max-w-7xl mx-auto px-4 py-6"><div class="flex flex-wrap justify-between items-center mb-4"><div><h2 class="text-2xl font-bold">Affiliate Dashboard</h2><p class="text-sm text-gray-500">Welcome, ${currentUser.email} | Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded">${currentUser.affiliateCode}</strong></p></div><div class="flex gap-2"><button id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-link"></i> Copy Referral Link</button><button id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line"></i> Load Sample</button></div></div><div class="grid lg:grid-cols-12 gap-6"><div class="lg:col-span-5"><div class="referral-stats-card rounded-2xl p-6 shadow-sm"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals & Rewards</h3><button id="viewProgramDetailsBtn" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button><p class="text-xs text-gray-400 mb-2">Live stats from API</p><div class="grid grid-cols-2 gap-4 mt-2"><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-total-referrals" class="text-3xl font-bold text-gray-800">…</div><div class="text-xs text-gray-500">Total referrals</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-active-accounts" class="text-3xl font-bold text-green-600">…</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-expected-payout" class="text-3xl font-bold text-blue-600">…</div><div class="text-xs text-gray-500">Expected payout</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div></div><div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div><div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div></div></div><div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-chart-line"></i> 3-Year Earnings Projection</h3><p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p><table class="w-full text-sm projection-table"><thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead><tbody><tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr><tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr></tbody></table><div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div></div></div><div class="mt-6"><div class="bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-file-signature"></i> Document Workspace</h3><div class="flex gap-2 mb-4"><button id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button><button id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button><button id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button></div><div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);"><div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Click "Add Signature Field" then click on this area to place signature tags.</p></div><div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div></div><div id="signersList" class="mt-3 flex flex-wrap gap-2"></div><button id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button><div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div></div></div></div>`;
+      return `<div class="max-w-7xl mx-auto px-4 py-6"><div class="flex flex-wrap justify-between items-center mb-4"><div><h2 class="text-2xl font-bold">Affiliate Dashboard</h2><p class="text-sm text-gray-500">Welcome, ${currentUser.email} | Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded">${currentUser.affiliateCode}</strong></p></div><div class="flex gap-2"><button id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-link"></i> Copy Referral Link</button><button id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line"></i> Load Sample</button></div></div><div class="grid lg:grid-cols-12 gap-6"><div class="lg:col-span-5"><div class="referral-stats-card rounded-2xl p-6 shadow-sm"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals & Rewards</h3><button type="button" data-nav="affiliate" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button><p class="text-xs text-gray-400 mb-2">Live stats from API</p><div class="grid grid-cols-2 gap-4 mt-2"><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-total-referrals" class="text-3xl font-bold text-gray-800">…</div><div class="text-xs text-gray-500">Total referrals</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-active-accounts" class="text-3xl font-bold text-green-600">…</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-expected-payout" class="text-3xl font-bold text-blue-600">…</div><div class="text-xs text-gray-500">Expected payout</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div></div><div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div><div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div></div></div><div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-chart-line"></i> 3-Year Earnings Projection</h3><p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p><table class="w-full text-sm projection-table"><thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead><tbody><tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr><tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr></tbody></table><div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div></div></div><div class="mt-6"><div class="bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-file-signature"></i> Document Workspace</h3><div class="flex gap-2 mb-4"><button id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button><button id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button><button id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button></div><div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);"><div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Click "Add Signature Field" then click on this area to place signature tags.</p></div><div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div></div><div id="signersList" class="mt-3 flex flex-wrap gap-2"></div><button id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button><div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div></div></div></div>`;
     }
 
     function renderDashboardContent() {
@@ -633,12 +857,6 @@
     function attachGlobalEvents() {
       document.querySelectorAll('.nav-link, [data-nav]').forEach(el => { if(!el.hasListener) { el.addEventListener('click', (e) => { const page = el.getAttribute('data-nav'); if(page) setActivePage(page); }); el.hasListener=true; } });
       document.querySelectorAll('.use-template-btn').forEach(el => { if(!el.hasListener) { el.addEventListener('click', (e) => { const tid = el.getAttribute('data-id'); if(tid && currentUser) { loadTemplate(tid); setActivePage('dashboard'); } else if(tid && !currentUser) alert('Please sign in first'); }); el.hasListener=true; } });
-      
-      const viewProgramBtns = ['viewProgramDetailsHomeBtn', 'viewProgramDetailsBtn'];
-      viewProgramBtns.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn && !btn.hasListener) { btn.addEventListener('click', () => document.getElementById('affiliateModal').classList.remove('hidden')); btn.hasListener = true; }
-      });
       
       const logout = document.getElementById('logoutBtn'); if(logout && !logout.hasListener) { logout.addEventListener('click', handleLogout); logout.hasListener=true; }
       const loginBtn = document.getElementById('doLoginBtn'); if(loginBtn) loginBtn.onclick = () => { const email = document.getElementById('loginEmail')?.value; if(email) handleLogin(email); };
