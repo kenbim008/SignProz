@@ -646,6 +646,8 @@
     let dashboardMainTab = 'workspace';
     /** Filters demo document list in Document Workspace */
     let dashboardEnvelopeSearch = '';
+    /** Pricing UI billing cycle: yearly | monthly */
+    let pricingBillingCycle = 'yearly';
     /** Home AI FAQ messages (simple local assistant) */
     let aiFaqHistory = [];
     /** Holds last generated template draft before user applies */
@@ -800,7 +802,7 @@
       currentUser.planType = 'unlimited';
       currentUser.docsRemaining = PRO_MONTHLY_LIMIT;
       currentUser.monthlyDocCount = 0;
-      addAudit(`✨ UPGRADED to Pro Plan ($29/mo): ${PRO_MONTHLY_LIMIT} documents per month.`);
+      addAudit(`✨ UPGRADED to Pro Plan: Unlimited documents, 1 sender, templates, branding, and signing links.`);
       alert(`Thank you! You are now on the Pro Plan.`);
       renderApp();
     }
@@ -812,6 +814,17 @@
       currentUser.docsRemaining = Infinity;
       addAudit(`🏢 UPGRADED to Enterprise plan ($499/mo): Unlimited documents.`);
       alert('Enterprise plan activated!');
+      renderApp();
+    }
+
+    function upgradeToPremium() {
+      if (!currentUser) return;
+      currentUser.plan = 'premium';
+      currentUser.planType = 'premium';
+      currentUser.docsRemaining = Infinity;
+      currentUser.monthlyDocCount = 0;
+      addAudit('💎 UPGRADED to Premium plan: Unlimited documents, up to 5 senders, advanced features.');
+      alert('Premium plan activated!');
       renderApp();
     }
 
@@ -827,13 +840,8 @@
     function checkFairUseLimit() {
       if (!currentUser) return true;
       if (currentUser.planType === 'enterprise') return true;
-      if (currentUser.planType === 'unlimited') {
-        if (currentUser.monthlyDocCount >= PRO_MONTHLY_LIMIT) {
-          addAudit(`⚠️ PRO PLAN LIMIT REACHED: ${PRO_MONTHLY_LIMIT} documents this month.`, "warn");
-          alert(`You have reached your Pro Plan limit of ${PRO_MONTHLY_LIMIT} documents this month.`);
-          return false;
-        }
-      }
+      if (currentUser.planType === 'premium') return true;
+      if (currentUser.planType === 'unlimited') return true;
       if (currentUser.planType === 'free') {
         if (currentUser.docsRemaining <= 0) {
           addAudit(`⚠️ Free tier limit reached (${FREE_TIER_LIMIT} documents).`, "warn");
@@ -1155,6 +1163,8 @@
           addAudit(`📄 Document signed. Monthly usage: ${currentUser.monthlyDocCount}/${PRO_MONTHLY_LIMIT}.`);
         } else if (currentUser.plan === 'enterprise') {
           addAudit(`📄 Document signed (Enterprise Plan).`);
+        } else if (currentUser.plan === 'premium') {
+          addAudit(`📄 Document signed (Premium Plan).`);
         }
       }
     }
@@ -1780,8 +1790,102 @@
       </div>`;
     }
 
-    function renderPricingPage() { 
-      return `<div class="max-w-6xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold text-center">Simple, Transparent Pricing</h2><div class="grid md:grid-cols-3 gap-6 mt-10 max-w-5xl mx-auto"><div class="bg-white rounded-2xl shadow-md p-6 text-center pricing-card"><i class="fas fa-gift text-4xl text-blue-500"></i><h3 class="text-2xl font-bold mt-2">Free</h3><p class="text-gray-500">$0</p><ul class="mt-4 space-y-2 text-sm"><li>✓ ${FREE_TIER_LIMIT} total documents</li><li>✓ Basic audit trail</li></ul><button data-nav="signup" class="mt-6 w-full bg-blue-50 text-blue-700 py-2 rounded-xl">Start Free</button></div><div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl shadow-md p-6 text-center pricing-card border-2 border-indigo-200"><i class="fas fa-rocket text-4xl text-indigo-600"></i><h3 class="text-2xl font-bold mt-2">Pro</h3><p class="text-gray-500">$29 / month</p><ul class="mt-4 space-y-2 text-sm"><li>✓ ${PRO_MONTHLY_LIMIT} docs/month</li><li>✓ Templates + Bulk Send</li><li>✓ API Access</li></ul><button id="upgradeUnlimitedPricingBtn" class="mt-6 w-full btn-primary text-white py-2 rounded-xl">Choose Pro</button></div><div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl shadow-xl p-6 text-center pricing-card text-white"><i class="fas fa-building text-4xl text-purple-300"></i><h3 class="text-2xl font-bold mt-2">Enterprise</h3><p class="text-purple-200">$499 / month</p><ul class="mt-4 space-y-2 text-sm text-purple-100"><li>✓ Unlimited documents</li><li>✓ SLA + SSO</li><li>✓ White-labeling</li></ul><button id="upgradeEnterprisePricingBtn" class="mt-6 w-full bg-white text-purple-900 py-2 rounded-xl">Contact Sales</button></div></div></div>`;
+    function renderPricingPage() {
+      const isYearly = pricingBillingCycle === 'yearly';
+      const proDisplay = isYearly ? '$10 / month' : '$20 / month';
+      const premiumDisplay = isYearly ? '$39.95 / month' : '$59.95 / month';
+      const yearlyBtnClass = isYearly
+        ? 'bg-blue-600 text-white shadow'
+        : 'bg-white text-slate-600 border border-slate-200';
+      const monthlyBtnClass = !isYearly
+        ? 'bg-blue-600 text-white shadow'
+        : 'bg-white text-slate-600 border border-slate-200';
+
+      return `<div class="max-w-6xl mx-auto px-4 py-12">
+        <h2 class="text-3xl font-bold text-center">Simple, Transparent Pricing</h2>
+        <p class="text-center text-sm text-slate-500 mt-2">Subscribers can choose monthly or yearly billing. Free package stays unchanged.</p>
+
+        <div class="flex items-center justify-center mt-6">
+          <div class="inline-flex gap-2 rounded-full bg-slate-100 p-1">
+            <button type="button" id="pricingYearlyToggle" class="px-4 py-1.5 rounded-full text-sm font-semibold ${yearlyBtnClass}">Yearly billing</button>
+            <button type="button" id="pricingMonthlyToggle" class="px-4 py-1.5 rounded-full text-sm font-semibold ${monthlyBtnClass}">Monthly billing</button>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6 mt-10 max-w-6xl mx-auto">
+          <div class="bg-white rounded-2xl shadow-md p-6 text-center pricing-card">
+            <i class="fas fa-gift text-4xl text-blue-500"></i>
+            <h3 class="text-2xl font-bold mt-2">Free</h3>
+            <p class="text-gray-500">$0</p>
+            <ul class="mt-4 space-y-2 text-sm text-left">
+              <li>✓ ${FREE_TIER_LIMIT} total documents</li>
+              <li>✓ Basic audit trail</li>
+            </ul>
+            <button data-nav="signup" class="mt-6 w-full bg-blue-50 text-blue-700 py-2 rounded-xl font-medium">Start Free</button>
+          </div>
+
+          <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl shadow-md p-6 pricing-card border-2 border-indigo-200">
+            <div class="text-center">
+              <i class="fas fa-rocket text-4xl text-indigo-600"></i>
+              <h3 class="text-2xl font-bold mt-2">PRO</h3>
+              <p class="text-3xl font-extrabold text-slate-900 mt-2">${proDisplay}</p>
+              <p class="text-xs text-slate-500 mt-1">If paid annually = $10 / month · If paid monthly = $20 / month</p>
+              <p class="text-xs text-indigo-700 font-medium mt-1">per month when paid annually</p>
+            </div>
+            <button id="upgradeUnlimitedPricingBtn" class="mt-5 w-full btn-primary text-white py-2.5 rounded-xl font-semibold">START FREE TRIAL</button>
+            <ul class="mt-4 space-y-2 text-sm text-slate-700">
+              <li>✓ 14-day free trial</li>
+              <li>✓ Unlimited documents</li>
+              <li>✓ 1 Sender</li>
+              <li>✓ Multiple signers</li>
+              <li>✓ Templates</li>
+              <li>✓ Branding</li>
+              <li>✓ Signing links</li>
+            </ul>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-md p-6 pricing-card border border-slate-200">
+            <div class="text-center">
+              <i class="fas fa-crown text-4xl text-fuchsia-600"></i>
+              <h3 class="text-2xl font-bold mt-2">Premium</h3>
+              <p class="text-3xl font-extrabold text-slate-900 mt-2">${premiumDisplay}</p>
+              <p class="text-xs text-slate-500 mt-1">If paid annually = $39.95 / month · If paid monthly = $59.95 / month</p>
+            </div>
+            <button id="upgradePremiumPricingBtn" class="mt-5 w-full bg-fuchsia-600 text-white py-2.5 rounded-xl font-semibold hover:bg-fuchsia-700">START FREE TRIAL</button>
+            <ul class="mt-4 space-y-2 text-sm text-slate-700">
+              <li>✓ 14-day free trial</li>
+              <li>✓ Unlimited documents</li>
+              <li>✓ up to 5 Senders</li>
+              <li>✓ Multiple signers</li>
+              <li>✓ Templates</li>
+              <li>✓ Branding</li>
+              <li>✓ Signing links</li>
+              <li>✓ Premium features</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-8 max-w-4xl mx-auto bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl shadow-xl p-6 text-white">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h3 class="text-2xl font-bold mt-1">Enterprise</h3>
+              <p class="text-purple-200 text-sm mt-1">Advanced scale and compliance for larger teams.</p>
+            </div>
+            <p class="text-xl font-extrabold">$499 / month</p>
+          </div>
+          <ul class="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-purple-100">
+            <li>✓ Unlimited documents</li>
+            <li>✓ Unlimited senders and team roles</li>
+            <li>✓ SLA + SSO</li>
+            <li>✓ White-labeling & custom branding</li>
+            <li>✓ API and webhook support</li>
+            <li>✓ Priority onboarding and support</li>
+            <li>✓ Security controls and audit exports</li>
+            <li>✓ Dedicated account management</li>
+          </ul>
+          <button id="upgradeEnterprisePricingBtn" class="mt-6 w-full sm:w-auto bg-white text-purple-900 px-6 py-2.5 rounded-xl font-semibold">Contact Sales</button>
+        </div>
+      </div>`;
     }
 
     function renderAboutPage() {
@@ -2294,7 +2398,12 @@
       const loginBtn = document.getElementById('doLoginBtn'); if(loginBtn) loginBtn.onclick = () => { const email = document.getElementById('loginEmail')?.value; if(email) handleLogin(email); };
       const signupBtn = document.getElementById('doSignupBtn'); if(signupBtn) signupBtn.onclick = () => { const email = document.getElementById('signupEmail')?.value; if(email) handleSignup(email, 'pass', 'free'); };
       const upgradePricing = document.getElementById('upgradeUnlimitedPricingBtn'); if(upgradePricing) upgradePricing.onclick = () => { if(currentUser) upgradeToUnlimited(); else alert("Sign up first"); };
+      const upgradePremium = document.getElementById('upgradePremiumPricingBtn'); if(upgradePremium) upgradePremium.onclick = () => { if(currentUser) upgradeToPremium(); else alert("Sign up first"); };
       const upgradeEnterprise = document.getElementById('upgradeEnterprisePricingBtn'); if(upgradeEnterprise) upgradeEnterprise.onclick = () => { if(currentUser) upgradeToEnterprise(); else alert("Sign up first"); };
+      const pricingYearlyToggle = document.getElementById('pricingYearlyToggle');
+      if (pricingYearlyToggle) pricingYearlyToggle.onclick = () => { pricingBillingCycle = 'yearly'; renderApp(); };
+      const pricingMonthlyToggle = document.getElementById('pricingMonthlyToggle');
+      if (pricingMonthlyToggle) pricingMonthlyToggle.onclick = () => { pricingBillingCycle = 'monthly'; renderApp(); };
     }
 
     window.addEventListener('popstate', () => { setActivePage(syncRouteFromHash(), false); });
