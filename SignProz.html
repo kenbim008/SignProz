@@ -25,6 +25,231 @@
     .tier-gold { background: linear-gradient(135deg, #ffd700 0%, #daa520 100%); }
     .tier-platinum { background: linear-gradient(135deg, #e5e4e2 0%, #b0b0b0 100%); }
     .projection-table td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; }
+
+    /* Subscriber portal — document sidebar */
+    .dashboard-portal-wrapper { align-items: stretch; }
+    .signproz-sidebar {
+      width: 100%;
+      max-width: 260px;
+      flex-shrink: 0;
+      background-color: #ffffff;
+      border-right: 1px solid #e5e7eb;
+      padding: 16px 14px;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+    @media (max-width: 1023px) {
+      .signproz-sidebar {
+        max-width: none;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
+    }
+    @media (min-width: 1024px) {
+      .signproz-sidebar {
+        width: 240px;
+        min-height: calc(100vh - 4.5rem);
+        position: sticky;
+        top: 4.5rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 4.5rem);
+        overflow-y: auto;
+      }
+    }
+    .signproz-sidebar .sidebar-action { margin-bottom: 4px; }
+    .signproz-sidebar .upload-btn {
+      width: 100%;
+      background-color: #ff4e00;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .signproz-sidebar .upload-btn:hover { background-color: #e64600; }
+    .signproz-sidebar .cloud-dropdown {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      padding: 10px 8px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #fafafa;
+    }
+    .signproz-sidebar .cloud-dropdown:hover { background: #f1f5f9; border-color: #cbd5e1; }
+    .signproz-sidebar .cloud-dropdown .arrow-down {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #64748b;
+    }
+    .signproz-sidebar .nav-list { list-style: none; padding: 0; margin: 0; }
+    .signproz-sidebar .nav-item {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      padding: 10px 6px;
+      font-size: 14px;
+      color: #334155;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .signproz-sidebar .nav-item:hover { background-color: #f8fafc; }
+    .signproz-sidebar .nav-item .icon { margin-right: 2px; flex-shrink: 0; }
+    .signproz-sidebar .nav-item a,
+    .signproz-sidebar .nav-item span.label { text-decoration: none; color: inherit; margin-left: 6px; flex: 1; }
+    .signproz-sidebar .nav-item.active { color: #1a73e8; font-weight: 600; background: #eff6ff; }
+    .signproz-sidebar .nav-sub-item {
+      display: block;
+      width: 100%;
+      padding: 8px 8px 8px 38px;
+      font-size: 13px;
+      color: #64748b;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      text-align: left;
+      border-radius: 6px;
+    }
+    .signproz-sidebar .nav-sub-item:hover { background-color: #f1f5f9; color: #334155; }
+    .signproz-sidebar .nav-sub-item.active { color: #1a73e8; font-weight: 600; background: #eff6ff; }
+    .signproz-sidebar .badge-new {
+      background-color: #2563eb;
+      color: white;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: auto;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .signproz-sidebar .cloud-menu {
+      display: none;
+      margin-top: -6px;
+      margin-bottom: 18px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 12px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .signproz-sidebar .cloud-menu.open { display: block; }
+    .signproz-sidebar .cloud-menu button {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      text-align: left;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      color: #475569;
+    }
+    .signproz-sidebar .cloud-menu button:hover { background: #f8fafc; }
+
+    /* Subscriber portal — prepare document: sign & field palette */
+    .signproz-editor-sidebar {
+      width: 100%;
+      max-width: 260px;
+      flex-shrink: 0;
+      background-color: #f8f9fa;
+      border-right: 1px solid #e5e7eb;
+      padding: 14px 12px;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+    @media (max-width: 1023px) {
+      .signproz-editor-sidebar {
+        max-width: none;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
+    }
+    @media (min-width: 1024px) {
+      .signproz-editor-sidebar {
+        width: 248px;
+        min-height: calc(100vh - 4.5rem);
+        position: sticky;
+        top: 4.5rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 4.5rem);
+        overflow-y: auto;
+      }
+    }
+    .signproz-editor-sidebar .sidebar-section h3 {
+      font-size: 11px;
+      color: #64748b;
+      margin: 0 0 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .signproz-editor-sidebar .drag-item {
+      display: flex;
+      align-items: center;
+      padding: 9px 10px;
+      margin-bottom: 6px;
+      background: #fff;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: grab;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      color: #334155;
+      font-size: 13px;
+    }
+    .signproz-editor-sidebar .drag-item:hover {
+      border-color: #2563eb;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    }
+    .signproz-editor-sidebar .drag-item:active { cursor: grabbing; }
+    .signproz-editor-sidebar .drag-item .icon {
+      width: 28px;
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .signproz-editor-sidebar .drag-item .label { margin-left: 8px; }
+    .signproz-editor-sidebar .separator {
+      border: 0;
+      border-top: 1px solid #e2e8f0;
+      margin: 14px 0;
+    }
+    .signproz-editor-sidebar .signer-selector { margin-bottom: 12px; }
+    .signproz-editor-sidebar #signer-dropdown {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+    }
+    .signproz-editor-sidebar .edit-link {
+      display: inline-block;
+      font-size: 11px;
+      color: #2563eb;
+      text-decoration: none;
+      margin-top: 6px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+    .signproz-editor-sidebar .edit-link:hover { text-decoration: underline; }
+    .signproz-editor-sidebar .field-item { border-left: 3px solid #3b82f6; }
+    #documentPreview.document-drop-target { outline: 2px dashed #93c5fd; outline-offset: 2px; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-gray-100">
@@ -145,6 +370,10 @@
     let reminderSettings = { enabled: false, daysBefore: 3, expirationDays: 7, reminderSent: false };
     let expirationTimer = null;
     let bulkQueue = [];
+    /** Dashboard document sidebar: documents | waiting_me | waiting_others | signed */
+    let dashboardSidebarSection = 'documents';
+    /** Active signer for fields dropped from the editor palette */
+    let dashboardActiveSignerId = null;
     
     function setActivePage(page, pushState = true) {
       if (!page || !KNOWN_PAGES.has(page)) page = 'home';
@@ -227,6 +456,7 @@
       };
       signatureFields = [];
       signers = [{ id: "s1", name: currentUser.email.split('@')[0], email: currentUser.email }];
+      dashboardActiveSignerId = signers[0].id;
       auditLog = [];
       monthlyDocumentCount = 0;
       affiliateReferrals = [];
@@ -248,6 +478,7 @@
         planType: 'free'
       };
       signers = [{ id: "s1", name: email.split('@')[0], email }];
+      dashboardActiveSignerId = signers[0].id;
       signatureFields = [];
       auditLog = [];
       monthlyDocumentCount = 0;
@@ -277,8 +508,10 @@
       currentUser = null;
       signatureFields = [];
       signers = [];
+      dashboardActiveSignerId = null;
       auditLog = [];
       addFieldMode = false;
+      dashboardSidebarSection = 'documents';
       setActivePage('home');
     }
 
@@ -337,6 +570,7 @@
       if (!template) return;
       signatureFields = template.fields.map((f, idx) => ({
         id: genId(),
+        kind: 'signature',
         signerId: signers[idx % signers.length]?.id || signers[0]?.id,
         leftPercent: f.leftPercent,
         topPercent: f.topPercent,
@@ -365,51 +599,159 @@
       addAudit(`📨 BULK SEND: Initiated to ${bulkQueue.length} recipients.`);
       if (bulkQueue.length > 0) {
         signers = bulkQueue.map((r, idx) => ({ id: genId(), name: r.name, email: r.email }));
-        renderDashboardContent();
+        dashboardActiveSignerId = signers[0].id;
+        renderApp();
       }
+    }
+
+    const PALETTE_DRAG_TYPES = new Set(['signature', 'sig-field', 'initials', 'text', 'text-field', 'date', 'checkbox', 'checkbox-field', 'checkmark']);
+
+    function isPaletteDragPayload(raw) {
+      return PALETTE_DRAG_TYPES.has(String(raw || '').trim().toLowerCase());
+    }
+
+    function normalizePaletteKind(raw) {
+      const k = String(raw || '').toLowerCase();
+      if (k === 'sig-field' || k === 'signature') return 'signature';
+      if (k === 'initials') return 'initials';
+      if (k === 'text-field' || k === 'text') return 'text';
+      if (k === 'date') return 'date';
+      if (k === 'checkbox-field' || k === 'checkbox') return 'checkbox';
+      if (k === 'checkmark') return 'checkmark';
+      return 'signature';
+    }
+
+    function fieldIsCompleteForSend(field) {
+      const kind = field.kind || 'signature';
+      if (kind === 'date') return !!field.signedData;
+      if (kind === 'text') return !!(field.signedData && field.signedData.type === 'text' && String(field.signedData.value || '').trim());
+      if (kind === 'checkbox') return !!(field.signedData && field.signedData.type === 'checkbox' && field.signedData.checked);
+      if (kind === 'checkmark') return !!(field.signedData && field.signedData.type === 'check' && field.signedData.done);
+      if (kind === 'signature' || kind === 'initials') return !!field.signedData;
+      return !!field.signedData;
+    }
+
+    function addDocumentFieldAt(xPercent, yPercent, paletteKind) {
+      if (!signers.length) {
+        alert('Add at least one signer before placing fields on the document.');
+        return false;
+      }
+      const kind = normalizePaletteKind(paletteKind);
+      let signerId = dashboardActiveSignerId && signers.some(s => s.id === dashboardActiveSignerId) ? dashboardActiveSignerId : signers[0].id;
+      const leftPercent = Math.min(92, Math.max(4, xPercent));
+      const topPercent = Math.min(92, Math.max(4, yPercent));
+      const base = { id: genId(), kind, signerId, leftPercent, topPercent, status: 'pending' };
+      let newField;
+      if (kind === 'date') {
+        newField = { ...base, signedData: { type: 'date', value: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) } };
+      } else if (kind === 'checkbox') {
+        newField = { ...base, signedData: { type: 'checkbox', checked: false } };
+      } else {
+        newField = { ...base, signedData: null };
+      }
+      signatureFields.push(newField);
+      addAudit(`➕ Placed ${kind.replace(/-/g, ' ')} on document`);
+      renderDashboardContent();
+      return true;
     }
 
     function addSignatureFieldAt(xPercent, yPercent) {
       if (!addFieldMode) return false;
-      if (!signers.length) return false;
-      const defaultSigner = signers[0]?.id;
-      if (!defaultSigner) return false;
-      const newField = { id: genId(), signerId: defaultSigner, leftPercent: Math.min(90, Math.max(5, xPercent)), topPercent: Math.min(90, Math.max(5, yPercent)), signedData: null, status: 'pending' };
-      signatureFields.push(newField);
-      addAudit(`➕ Added signature field`);
-      renderDashboardContent();
-      return true;
+      return addDocumentFieldAt(xPercent, yPercent, 'signature');
     }
 
     function renderFieldsOnDocument(containerElement) {
       if (!containerElement) return;
       containerElement.innerHTML = '';
       signatureFields.forEach(field => {
+        const kind = field.kind || 'signature';
         const signerObj = signers.find(s => s.id === field.signerId) || signers[0];
-        const isSigned = !!field.signedData;
+        const complete = fieldIsCompleteForSend(field);
         const fieldDiv = document.createElement('div');
-        fieldDiv.className = `signature-field ${isSigned ? 'signed' : ''} absolute pointer-events-auto flex flex-col items-center justify-center`;
+        fieldDiv.dataset.fieldId = field.id;
+        fieldDiv.className = `signature-field ${complete ? 'signed' : ''} absolute pointer-events-auto flex flex-col items-center justify-center`;
         fieldDiv.style.left = `${field.leftPercent}%`;
         fieldDiv.style.top = `${field.topPercent}%`;
         fieldDiv.style.transform = 'translate(-50%, -50%)';
-        fieldDiv.style.minWidth = '130px';
+        if (kind === 'text') fieldDiv.style.minWidth = '100px';
+        else if (kind === 'checkbox' || kind === 'checkmark') fieldDiv.style.minWidth = '72px';
+        else fieldDiv.style.minWidth = '130px';
+
         let contentHtml = '';
-        if (isSigned) {
-          if (field.signedData.type === 'typed') contentHtml = `<div class="text-xs text-green-700 font-semibold">✓ Signed</div><div class="text-sm" style="font-family: 'Brush Script MT', cursive;">${field.signedData.html}</div>`;
-          else if (field.signedData.type === 'draw') contentHtml = `<div class="text-xs text-green-600">✍️ Signature</div><img src="${field.signedData.imgData}" style="max-height: 40px; max-width: 110px;" />`;
-        } else contentHtml = `<div class="text-xs font-semibold text-gray-500">🔏 Pending</div><div class="text-[11px]">${escapeHtml(signerObj.name)}</div>`;
-        fieldDiv.innerHTML = `<div class="flex justify-between w-full items-center gap-1 text-[10px] mb-1"><span class="bg-gray-200 px-1 rounded">${escapeHtml(signerObj.name.split(' ')[0])}</span><div class="flex gap-1">${!isSigned ? `<button class="sign-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}"><i class="fas fa-pen"></i></button>` : ''}<button class="delete-field-btn text-red-400 hover:text-red-700 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}"><i class="fas fa-times"></i></button></div></div><div class="text-center w-full">${contentHtml}</div>`;
+        let extraControls = '';
+
+        if (kind === 'text') {
+          const val = field.signedData && field.signedData.type === 'text' ? escapeHtml(field.signedData.value) : '';
+          contentHtml = val
+            ? `<div class="text-xs text-green-700 font-semibold">Text</div><div class="text-[11px] px-1">${val}</div>`
+            : `<div class="text-xs font-semibold text-amber-700">Text field</div><div class="text-[10px] text-gray-500">Click to fill</div>`;
+          extraControls = !val ? `<button type="button" class="fill-text-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}" title="Fill"><i class="fas fa-edit"></i></button>` : '';
+        } else if (kind === 'date' && field.signedData && field.signedData.type === 'date') {
+          contentHtml = `<div class="text-[10px] text-gray-500">Date signed</div><div class="text-xs font-semibold text-slate-800">${escapeHtml(field.signedData.value)}</div>`;
+        } else if (kind === 'checkbox') {
+          const checked = !!(field.signedData && field.signedData.checked);
+          contentHtml = `<div class="text-[10px] text-gray-500">Checkbox</div><button type="button" class="toggle-checkbox-field text-2xl leading-none" data-id="${field.id}">${checked ? '☑️' : '☐'}</button>`;
+        } else if (kind === 'checkmark') {
+          const done = !!(field.signedData && field.signedData.done);
+          contentHtml = `<div class="text-[10px] text-gray-500">Acknowledge</div><button type="button" class="toggle-checkmark-field text-2xl leading-none" data-id="${field.id}">${done ? '✅' : '⬜'}</button>`;
+        } else {
+          const isSigned = !!(field.signedData && (field.signedData.type === 'typed' || field.signedData.type === 'draw'));
+          if (isSigned) {
+            if (field.signedData.type === 'typed') contentHtml = `<div class="text-xs text-green-700 font-semibold">${kind === 'initials' ? '✓ Initials' : '✓ Signed'}</div><div class="text-sm" style="font-family: 'Brush Script MT', cursive;">${field.signedData.html}</div>`;
+            else if (field.signedData.type === 'draw') contentHtml = `<div class="text-xs text-green-600">${kind === 'initials' ? '✍️ Initials' : '✍️ Signature'}</div><img src="${field.signedData.imgData}" style="max-height: 40px; max-width: 110px;" alt="" />`;
+          } else {
+            contentHtml = `<div class="text-xs font-semibold text-gray-500">${kind === 'initials' ? '✏️ Initials' : '🔏 Signature'}</div><div class="text-[11px]">${escapeHtml(signerObj.name)}</div>`;
+            extraControls = `<button class="sign-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}"><i class="fas fa-pen"></i></button>`;
+          }
+        }
+
+        const showDelete = true;
+        fieldDiv.innerHTML = `<div class="flex justify-between w-full items-center gap-1 text-[10px] mb-1"><span class="bg-gray-200 px-1 rounded max-w-[72px] truncate">${escapeHtml((signerObj.name || '').split(' ')[0])}</span><div class="flex gap-1">${extraControls}${showDelete ? `<button type="button" class="delete-field-btn text-red-400 hover:text-red-700 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}"><i class="fas fa-times"></i></button>` : ''}</div></div><div class="text-center w-full">${contentHtml}</div>`;
         containerElement.appendChild(fieldDiv);
       });
-      document.querySelectorAll('.sign-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.getAttribute('data-id'); openSignatureModal(id); }));
-      document.querySelectorAll('.delete-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.getAttribute('data-id'); deleteFieldById(id); }));
+      document.querySelectorAll('.sign-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); openSignatureModal(btn.getAttribute('data-id')); }));
+      document.querySelectorAll('.delete-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteFieldById(btn.getAttribute('data-id')); }));
+      document.querySelectorAll('.fill-text-field-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const f = signatureFields.find(x => x.id === id);
+        if (!f) return;
+        const v = prompt('Text for this field:', (f.signedData && f.signedData.value) || '');
+        if (v === null) return;
+        const t = v.trim();
+        if (!t) { alert('Enter some text for this field.'); return; }
+        f.signedData = { type: 'text', value: t };
+        addAudit('✏️ Updated text field');
+        renderDashboardContent();
+        checkDocumentCompletion();
+      }));
+      document.querySelectorAll('.toggle-checkbox-field').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const f = signatureFields.find(x => x.id === id);
+        if (!f || !f.signedData || f.signedData.type !== 'checkbox') return;
+        f.signedData.checked = !f.signedData.checked;
+        renderDashboardContent();
+        checkDocumentCompletion();
+      }));
+      document.querySelectorAll('.toggle-checkmark-field').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const f = signatureFields.find(x => x.id === id);
+        if (!f) return;
+        f.signedData = { type: 'check', done: true };
+        renderDashboardContent();
+        checkDocumentCompletion();
+      }));
     }
 
     function deleteFieldById(id) { signatureFields = signatureFields.filter(f => f.id !== id); addAudit(`Removed signature field`); renderDashboardContent(); }
 
     function openSignatureModal(fieldId) {
       const field = signatureFields.find(f => f.id === fieldId);
-      if (!field || field.signedData) return;
+      const kind = field && (field.kind || 'signature');
+      if (!field || (kind !== 'signature' && kind !== 'initials')) return;
+      if (field.signedData) return;
       currentFieldIdForModal = fieldId;
       const signer = signers.find(s => s.id === field.signerId) || signers[0];
       document.getElementById('modalSignerName').innerText = signer.name;
@@ -444,7 +786,7 @@
 
     function checkDocumentCompletion() {
       if (!currentUser) return;
-      const allSigned = signatureFields.length > 0 && signatureFields.every(f => f.signedData);
+      const allSigned = signatureFields.length > 0 && signatureFields.every(fieldIsCompleteForSend);
       if (allSigned && signatureFields.length) {
         if (!checkFairUseLimit()) return;
         if (currentUser.plan === 'free') {
@@ -805,9 +1147,91 @@
       return `<div class="max-w-6xl mx-auto px-4 py-12"><h2 class="text-3xl font-bold">Document Templates</h2><div class="grid md:grid-cols-3 gap-6 mt-8">${templates.map(t => `<div class="bg-white rounded-xl shadow-sm p-5 template-card border border-gray-200"><i class="fas fa-file-alt text-blue-500 text-2xl"></i><h3 class="font-bold text-lg mt-2">${t.name}</h3><button class="use-template-btn mt-3 text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full" data-id="${t.id}">Use template</button></div>`).join('')}</div></div>`;
     }
 
+    function renderDashboardSidebar() {
+      const s = dashboardSidebarSection;
+      const docGroup = ['documents', 'waiting_me', 'waiting_others', 'signed'];
+      const docParentActive = docGroup.includes(s);
+      return `<aside class="signproz-sidebar" aria-label="Document management">
+        <input type="file" id="dashSidebarFileInput" class="hidden" accept=".pdf,.doc,.docx,application/pdf" multiple>
+        <div class="sidebar-action">
+          <button type="button" id="dashUploadDocBtn" class="upload-btn">Upload Document</button>
+          <button type="button" id="dashCloudToggle" class="cloud-dropdown" aria-expanded="false" aria-haspopup="true">
+            <span>Get from Cloud</span><span class="arrow-down" aria-hidden="true"></span>
+          </button>
+          <div id="dashCloudMenu" class="cloud-menu" role="menu">
+            <button type="button" role="menuitem" class="dash-cloud-pick" data-cloud="gdrive">Google Drive</button>
+            <button type="button" role="menuitem" class="dash-cloud-pick" data-cloud="dropbox">Dropbox</button>
+            <button type="button" role="menuitem" class="dash-cloud-pick" data-cloud="box">Box</button>
+          </div>
+        </div>
+        <nav class="sidebar-nav" aria-label="Documents">
+          <ul class="nav-list">
+            <li>
+              <button type="button" id="dashNavDocuments" class="nav-item ${docParentActive ? 'active' : ''}" data-dash-section="documents">
+                <span class="icon" aria-hidden="true">📄</span><span class="label">Documents</span>
+              </button>
+            </li>
+            <li><button type="button" class="nav-sub-item ${s === 'waiting_me' ? 'active' : ''}" data-dash-section="waiting_me">Waiting for me</button></li>
+            <li><button type="button" class="nav-sub-item ${s === 'waiting_others' ? 'active' : ''}" data-dash-section="waiting_others">Waiting for others</button></li>
+            <li><button type="button" class="nav-sub-item ${s === 'signed' ? 'active' : ''}" data-dash-section="signed">Signed</button></li>
+            <li><button type="button" data-nav="templates" class="nav-item"><span class="icon" aria-hidden="true">📑</span><span class="label">Templates</span></button></li>
+            <li><button type="button" id="dashSidebarBulkSend" class="nav-item"><span class="icon" aria-hidden="true">✉️</span><span class="label">Bulk send</span></button></li>
+            <li><button type="button" id="dashSidebarTeamBtn" class="nav-item"><span class="icon" aria-hidden="true">👥</span><span class="label">Team</span></button></li>
+            <li><button type="button" id="dashSidebarAiBtn" class="nav-item"><span class="icon" aria-hidden="true">💬</span><span class="label">AI Assistant</span><span class="badge-new">NEW</span></button></li>
+          </ul>
+        </nav>
+      </aside>`;
+    }
+
+    function renderDashboardEditorSidebar() {
+      if (!currentUser) return '';
+      if (!signers.length) dashboardActiveSignerId = null;
+      else if (!dashboardActiveSignerId || !signers.some(s => s.id === dashboardActiveSignerId)) dashboardActiveSignerId = signers[0].id;
+      const dashSignerId = dashboardActiveSignerId;
+      const opts = signers.map((s, i) => `<option value="${s.id}"${s.id === dashSignerId ? ' selected' : ''}>Signer ${i + 1} — ${escapeHtml(s.name)}</option>`).join('');
+      return `<aside class="signproz-editor-sidebar" aria-label="Prepare document">
+        <div class="sidebar-section">
+          <h3>SIGN &amp; EDIT</h3>
+          <div class="drag-item" draggable="true" data-palette-kind="signature"><span class="icon" aria-hidden="true">✍️</span><span class="label">My Signature</span></div>
+          <div class="drag-item" draggable="true" data-palette-kind="initials"><span class="icon" aria-hidden="true">AB</span><span class="label">My Initials</span></div>
+          <div class="drag-item" draggable="true" data-palette-kind="text"><span class="icon" aria-hidden="true">T</span><span class="label">Text</span></div>
+          <div class="drag-item" draggable="true" data-palette-kind="date"><span class="icon" aria-hidden="true">📅</span><span class="label">Date Signed</span></div>
+          <div class="drag-item" draggable="true" data-palette-kind="checkmark"><span class="icon" aria-hidden="true">✔️</span><span class="label">Checkmark</span></div>
+        </div>
+        <hr class="separator" role="presentation">
+        <div class="sidebar-section">
+          <h3>ADD FIELDS</h3>
+          <div class="signer-selector">
+            <label for="signer-dropdown" class="sr-only">Assign fields to signer</label>
+            <select id="signer-dropdown" aria-label="Signer for new fields">${opts || '<option value="">— Add a signer —</option>'}</select>
+            <button type="button" id="dashEditSignersLink" class="edit-link">Edit signers</button>
+          </div>
+          <div class="drag-item field-item" draggable="true" data-palette-kind="sig-field"><span class="icon" aria-hidden="true">✍️</span><span class="label">Signature Field</span></div>
+          <div class="drag-item field-item" draggable="true" data-palette-kind="text-field"><span class="icon" aria-hidden="true">T</span><span class="label">Text Field</span></div>
+          <div class="drag-item field-item" draggable="true" data-palette-kind="checkbox-field"><span class="icon" aria-hidden="true">☑️</span><span class="label">Checkbox Field</span></div>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-3 leading-snug">Drag a tile onto the document workspace. Or use <strong>Add Signature Field</strong> and click the page.</p>
+      </aside>`;
+    }
+
+    function dashboardDocFilterBannerHtml() {
+      const labels = {
+        documents: '',
+        waiting_me: 'View: <strong>Waiting for me</strong> — envelopes where your signature is requested (demo).',
+        waiting_others: 'View: <strong>Waiting for others</strong> — you completed your part; outstanding signers (demo).',
+        signed: 'View: <strong>Signed</strong> — completed agreements in the last 90 days (demo).'
+      };
+      const msg = labels[dashboardSidebarSection] || '';
+      if (!msg) return '';
+      return `<div class="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">${msg}</div>`;
+    }
+
     function renderDashboard() {
       if (!currentUser) return '<div class="p-10 text-center">Please login</div>';
-      return `<div class="max-w-7xl mx-auto px-4 py-6"><div class="flex flex-wrap justify-between items-center mb-4"><div><h2 class="text-2xl font-bold">Affiliate Dashboard</h2><p class="text-sm text-gray-500">Welcome, ${currentUser.email} | Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded">${currentUser.affiliateCode}</strong></p></div><div class="flex gap-2"><button id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-link"></i> Copy Referral Link</button><button id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line"></i> Load Sample</button></div></div><div class="grid lg:grid-cols-12 gap-6"><div class="lg:col-span-5"><div class="referral-stats-card rounded-2xl p-6 shadow-sm"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals & Rewards</h3><button type="button" data-nav="affiliate" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button><p class="text-xs text-gray-400 mb-2">Live stats from API</p><div class="grid grid-cols-2 gap-4 mt-2"><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-total-referrals" class="text-3xl font-bold text-gray-800">…</div><div class="text-xs text-gray-500">Total referrals</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-active-accounts" class="text-3xl font-bold text-green-600">…</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-expected-payout" class="text-3xl font-bold text-blue-600">…</div><div class="text-xs text-gray-500">Expected payout</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div></div><div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div><div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div></div></div><div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-chart-line"></i> 3-Year Earnings Projection</h3><p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p><table class="w-full text-sm projection-table"><thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead><tbody><tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr><tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr></tbody></table><div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div></div></div><div class="mt-6"><div class="bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-file-signature"></i> Document Workspace</h3><div class="flex gap-2 mb-4"><button id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button><button id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button><button id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button></div><div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);"><div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Click "Add Signature Field" then click on this area to place signature tags.</p></div><div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div></div><div id="signersList" class="mt-3 flex flex-wrap gap-2"></div><button id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button><div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div></div></div></div>`;
+      const sidebar = renderDashboardSidebar();
+      const editorSidebar = renderDashboardEditorSidebar();
+      const mainInner = `<div class="max-w-7xl mx-auto px-2 sm:px-4 py-6">${dashboardDocFilterBannerHtml()}<div class="flex flex-wrap justify-between items-center mb-4"><div><h2 class="text-2xl font-bold">Subscriber portal</h2><p class="text-sm text-gray-500">Welcome, ${currentUser.email} | Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded">${currentUser.affiliateCode}</strong></p></div><div class="flex gap-2"><button type="button" id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-link"></i> Copy Referral Link</button><button type="button" id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line"></i> Load Sample</button></div></div><div class="grid lg:grid-cols-12 gap-6"><div class="lg:col-span-5"><div class="referral-stats-card rounded-2xl p-6 shadow-sm"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals &amp; Rewards</h3><button type="button" data-nav="affiliate" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button><p class="text-xs text-gray-400 mb-2">Live stats from API</p><div class="grid grid-cols-2 gap-4 mt-2"><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-total-referrals" class="text-3xl font-bold text-gray-800">…</div><div class="text-xs text-gray-500">Total referrals</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-active-accounts" class="text-3xl font-bold text-green-600">…</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-expected-payout" class="text-3xl font-bold text-blue-600">…</div><div class="text-xs text-gray-500">Expected payout</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div></div><div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div><div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div></div></div><div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-chart-line"></i> 3-Year Earnings Projection</h3><p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p><table class="w-full text-sm projection-table"><thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead><tbody><tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr><tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr></tbody></table><div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div></div></div><div class="mt-6"><div class="bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-file-signature"></i> Document Workspace</h3><div class="flex gap-2 mb-4 flex-wrap"><button type="button" id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button><button type="button" id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button><button type="button" id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button></div><div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);"><div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Drag tiles from <strong>Sign &amp; Edit</strong> / <strong>Add fields</strong>, or turn on <strong>Add Signature Field</strong> and click the page.</p></div><div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div></div><div id="signersList" class="mt-3 flex flex-wrap gap-2"></div><button type="button" id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button><div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div></div></div></div>`;
+      return `<div class="dashboard-portal-wrapper flex flex-col lg:flex-row w-full max-w-[1800px] mx-auto">${sidebar}${editorSidebar}<div class="dashboard-main-area flex-1 min-w-0 w-full bg-gradient-to-br from-slate-50/50 to-transparent">${mainInner}</div></div>`;
     }
 
     function renderDashboardContent() {
@@ -822,8 +1246,15 @@
       
       const signersContainer = document.getElementById('signersList');
       if (signersContainer && signers.length) {
-        signersContainer.innerHTML = signers.map(s => `<span class="bg-gray-100 px-2 py-1 rounded-full text-xs">${escapeHtml(s.name)} <button class="remove-signer-dash text-red-400 ml-1" data-id="${s.id}"><i class="fas fa-times"></i></button></span>`).join('');
-        document.querySelectorAll('.remove-signer-dash').forEach(btn => btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-id'); signers = signers.filter(s => s.id !== id); renderDashboardContent(); }));
+        signersContainer.innerHTML = signers.map(s => `<span class="bg-gray-100 px-2 py-1 rounded-full text-xs">${escapeHtml(s.name)} <button type="button" class="remove-signer-dash text-red-400 ml-1" data-id="${s.id}"><i class="fas fa-times"></i></button></span>`).join('');
+        document.querySelectorAll('.remove-signer-dash').forEach(btn => btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = btn.getAttribute('data-id');
+          signers = signers.filter(s => s.id !== id);
+          if (!signers.length) dashboardActiveSignerId = null;
+          else if (!signers.some(s => s.id === dashboardActiveSignerId)) dashboardActiveSignerId = signers[0].id;
+          renderApp();
+        }));
       }
     }
 
@@ -835,7 +1266,11 @@
       if (toggleBtn) toggleBtn.onclick = () => { addFieldMode = !addFieldMode; document.getElementById('addModeBadge')?.classList.toggle('hidden'); };
       
       const sendBtn = document.getElementById('sendDocBtn');
-      if (sendBtn) sendBtn.onclick = () => { if (signatureFields.length === 0) alert('Add signature fields first'); else checkDocumentCompletion(); };
+      if (sendBtn) sendBtn.onclick = () => {
+        if (signatureFields.length === 0) { alert('Add fields to the document first.'); return; }
+        if (!signatureFields.every(fieldIsCompleteForSend)) { alert('Complete every field (sign, fill text, check boxes, etc.) before finalizing.'); return; }
+        checkDocumentCompletion();
+      };
       
       const resetBtn = document.getElementById('resetDocumentBtn');
       if (resetBtn) resetBtn.onclick = () => { signatureFields = []; renderDashboardContent(); addAudit("Reset document fields."); };
@@ -846,10 +1281,113 @@
       const sampleBtn = document.getElementById('sampleDataBtn');
       if (sampleBtn) sampleBtn.onclick = () => loadSampleAffiliateData();
       
-      document.getElementById('addSignerBtn')?.addEventListener('click', () => { let name = prompt("Signer name"); if(name) signers.push({ id: genId(), name, email: name.toLowerCase()+'@example.com' }); renderDashboardContent(); });
+      document.getElementById('addSignerBtn')?.addEventListener('click', () => {
+        const name = prompt('Signer name');
+        if (!name) return;
+        signers.push({ id: genId(), name, email: name.toLowerCase().replace(/\s+/g, '') + '@example.com' });
+        dashboardActiveSignerId = signers[signers.length - 1].id;
+        renderApp();
+      });
       
       container.addEventListener('click', (e) => { if(!addFieldMode) return; const rect = document.getElementById('dynamicFieldsContainer').getBoundingClientRect(); const x = ((e.clientX - rect.left)/rect.width)*100; const y = ((e.clientY - rect.top)/rect.height)*100; if(x>=0 && x<=100 && y>=0 && y<=100) addSignatureFieldAt(x,y); });
-      
+
+      const dashFileInput = document.getElementById('dashSidebarFileInput');
+      const dashUploadBtn = document.getElementById('dashUploadDocBtn');
+      if (dashUploadBtn && dashFileInput) {
+        dashUploadBtn.onclick = () => dashFileInput.click();
+        dashFileInput.onchange = () => {
+          const files = dashFileInput.files;
+          if (files && files.length) {
+            const names = Array.from(files).map(f => f.name).join(', ');
+            addAudit('📎 Upload queued (demo): ' + names);
+          }
+          dashFileInput.value = '';
+        };
+      }
+      const cloudToggle = document.getElementById('dashCloudToggle');
+      const cloudMenu = document.getElementById('dashCloudMenu');
+      if (cloudToggle && cloudMenu) {
+        cloudToggle.onclick = (ev) => {
+          ev.stopPropagation();
+          const open = cloudMenu.classList.toggle('open');
+          cloudToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+        cloudMenu.querySelectorAll('.dash-cloud-pick').forEach((btn) => {
+          btn.onclick = (ev) => {
+            ev.stopPropagation();
+            cloudMenu.classList.remove('open');
+            cloudToggle.setAttribute('aria-expanded', 'false');
+            const which = btn.getAttribute('data-cloud');
+            const label = which === 'gdrive' ? 'Google Drive' : which === 'dropbox' ? 'Dropbox' : 'Box';
+            addAudit('☁️ Cloud import selected (demo): ' + label);
+            alert('Demo: connect ' + label + ' under Integrations in a production workspace.');
+          };
+        });
+      }
+      document.querySelectorAll('[data-dash-section]').forEach((btn) => {
+        btn.onclick = () => {
+          const sec = btn.getAttribute('data-dash-section');
+          if (sec) { dashboardSidebarSection = sec; renderApp(); }
+        };
+      });
+      const bulkSidebar = document.getElementById('dashSidebarBulkSend');
+      if (bulkSidebar) bulkSidebar.onclick = () => openBulkSendModal();
+      document.getElementById('dashSidebarTeamBtn')?.addEventListener('click', () => alert('Demo: Team — shared workspaces, roles, and SSO appear here in the full product.'));
+      document.getElementById('dashSidebarAiBtn')?.addEventListener('click', () => alert('Demo: AI Assistant — summarize envelopes, suggest fields, and answer policy questions (preview).'));
+
+      const signerSel = document.getElementById('signer-dropdown');
+      if (signerSel) {
+        signerSel.addEventListener('change', () => {
+          dashboardActiveSignerId = signerSel.value || null;
+        });
+      }
+      document.getElementById('dashEditSignersLink')?.addEventListener('click', () => {
+        const el = document.getElementById('addSignerBtn');
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); el.focus(); }
+        const name = prompt('Add another signer (optional). Leave empty to scroll only.');
+        if (name && name.trim()) {
+          signers.push({ id: genId(), name: name.trim(), email: name.trim().toLowerCase().replace(/\s+/g, '') + '@example.com' });
+          dashboardActiveSignerId = signers[signers.length - 1].id;
+          renderApp();
+        }
+      });
+
+      document.querySelectorAll('.signproz-editor-sidebar .drag-item[draggable="true"]').forEach((el) => {
+        el.addEventListener('dragstart', (e) => {
+          const k = el.getAttribute('data-palette-kind') || 'signature';
+          e.dataTransfer.setData('application/x-signproz-field', k);
+          e.dataTransfer.setData('text/plain', k);
+          e.dataTransfer.effectAllowed = 'copy';
+          document.getElementById('documentPreview')?.classList.add('document-drop-target');
+        });
+        el.addEventListener('dragend', () => {
+          document.getElementById('documentPreview')?.classList.remove('document-drop-target');
+        });
+      });
+
+      const preview = document.getElementById('documentPreview');
+      if (preview && !preview._signprozDropBound) {
+        preview._signprozDropBound = true;
+        preview.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+        });
+        preview.addEventListener('drop', (e) => {
+          const rawKind = e.dataTransfer.getData('application/x-signproz-field') || e.dataTransfer.getData('text/plain');
+          if (!rawKind || !isPaletteDragPayload(rawKind)) return;
+          e.preventDefault();
+          preview.classList.remove('document-drop-target');
+          const inner = document.getElementById('dynamicFieldsContainer');
+          if (!inner) return;
+          const rect = inner.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0) return;
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          if (x < -2 || x > 102 || y < -2 || y > 102) return;
+          addDocumentFieldAt(x, y, rawKind);
+        });
+      }
+
       renderDashboardContent();
       fetchReferralStatsFromApi();
     }
