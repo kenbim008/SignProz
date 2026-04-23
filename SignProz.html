@@ -369,6 +369,12 @@
     .dash-doc-status-signed { background: #dcfce7; color: #15803d; }
     .dash-doc-status-waiting { background: #fef9c3; color: #a16207; }
     .dash-doc-status-draft { background: #f1f5f9; color: #475569; }
+    #aiAgreementModal .ai-agreement-output h4 { font-weight: 700; color: #0f172a; margin: 0.75rem 0 0.35rem; font-size: 0.95rem; }
+    #aiAgreementModal .ai-agreement-output ul { margin: 0.25rem 0 0.5rem 1rem; padding: 0; list-style: disc; font-size: 0.875rem; color: #334155; }
+    #aiAgreementModal .ai-agreement-output p { font-size: 0.875rem; color: #475569; margin: 0.35rem 0; }
+    #aiAgreementModal .ai-chip { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px; margin-right: 0.35rem; }
+    #aiAgreementModal .ai-chip-warn { background: #fef3c7; color: #92400e; }
+    #aiAgreementModal .ai-chip-ok { background: #dcfce7; color: #166534; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-gray-100">
@@ -438,6 +444,31 @@
         </div>
 
         <button id="closeAffiliateModalFooterBtn" class="w-full bg-blue-600 text-white py-2 rounded-xl font-semibold">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Agreement Assistant -->
+  <div id="aiAgreementModal" class="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+      <div class="bg-gradient-to-r from-violet-600 to-indigo-700 px-5 py-4 flex justify-between items-center gap-3 flex-shrink-0">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fas fa-magic"></i> AI agreement assistant</h3>
+          <p class="text-xs text-violet-100 mt-0.5">Summaries, risk flags, and checklist ideas for drafts you are about to send.</p>
+        </div>
+        <button type="button" id="closeAiAgreementModalBtn" class="text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/10" aria-label="Close"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+        <label for="aiAgreementInput" class="block text-sm font-semibold text-slate-800">Agreement or clause text</label>
+        <textarea id="aiAgreementInput" class="w-full border border-slate-200 rounded-xl p-3 text-sm min-h-[140px] focus:ring-2 focus:ring-violet-200 focus:border-violet-400 outline-none" placeholder="Paste NDA, MSA, offer letter, or policy language here…"></textarea>
+        <p class="text-xs text-slate-500">Built-in analysis runs in your browser. Optionally set <code class="bg-slate-100 px-1 rounded">window.SIGNPROZ_AI_AGREEMENT_API</code> to your server base URL and implement <code class="bg-slate-100 px-1 rounded">POST /api/agreement-analyze</code> returning JSON <code class="bg-slate-100 px-1 rounded">{ "html": "..." }</code> for live model output.</p>
+        <div class="flex flex-wrap gap-2 items-center">
+          <button type="button" id="aiAgreementRunBtn" class="btn-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow"><i class="fas fa-robot mr-2" aria-hidden="true"></i>Analyze with AI</button>
+          <span id="aiAgreementStatus" class="text-xs text-slate-500"></span>
+        </div>
+        <div id="aiAgreementOutput" class="ai-agreement-output rounded-xl border border-slate-100 bg-slate-50/80 p-4 min-h-[120px] text-left">
+          <p class="text-sm text-slate-500">Results will appear here after you run analysis.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -555,12 +586,12 @@
       }
     }
 
-    // 3-Year Revenue Projection Data (Non-Aggressive)
+    // 3-Year Revenue Projection — new referrals Y1=36, Y2=84, Y3=144; earnings scaled from prior model (same commission assumptions)
     const revenueProjection = {
-      year1: { newReferrals: 20, totalReferrals: 20, earnings: 661, avgMonthly: 55, endMonthly: 116 },
-      year2: { newReferrals: 31, totalReferrals: 51, earnings: 3204, avgMonthly: 267, endMonthly: 420 },
-      year3: { newReferrals: 43, totalReferrals: 94, earnings: 9060, avgMonthly: 755, endMonthly: 1060 },
-      total: { referrals: 94, earnings: 12925 }
+      year1: { newReferrals: 36, totalReferrals: 36, earnings: 1190, avgMonthly: 99, endMonthly: 186 },
+      year2: { newReferrals: 84, totalReferrals: 120, earnings: 8686, avgMonthly: 724, endMonthly: 1012 },
+      year3: { newReferrals: 144, totalReferrals: 264, earnings: 30317, avgMonthly: 2526, endMonthly: 3294 },
+      total: { referrals: 264, earnings: 40193 }
     };
 
     function handleSignup(email, password, plan = 'free', referrerCode = null) {
@@ -1007,6 +1038,104 @@
 
     function closeModal() { document.getElementById('signatureModal')?.classList.add('hidden'); currentFieldIdForModal = null; }
 
+    function openAiAgreementModal() {
+      document.getElementById('aiAgreementModal')?.classList.remove('hidden');
+      document.getElementById('aiAgreementInput')?.focus();
+    }
+
+    function closeAiAgreementModal() {
+      document.getElementById('aiAgreementModal')?.classList.add('hidden');
+      const st = document.getElementById('aiAgreementStatus');
+      if (st) st.textContent = '';
+    }
+
+    function analyzeAgreementHeuristic(text) {
+      const t = text.toLowerCase();
+      const wc = text.trim().split(/\s+/).filter(Boolean).length;
+      const bullets = [];
+      const push = (type, msg) => bullets.push({ type, msg });
+
+      if (wc < 40) push('warn', 'Text is quite short — paste the full section or agreement for a stronger review.');
+      if (t.includes('confidential') || t.includes('non-disclosure') || t.includes(' proprietary')) push('ok', 'Confidentiality / proprietary language detected — confirm term length and return-of-materials match your risk.');
+      if (t.includes('nda') || t.includes('non disclosure')) push('ok', 'Reads like an NDA — verify mutual vs one-way obligations and carve-outs (legal counsel, public info).');
+      if (!t.includes('terminat') && !t.includes('expir')) push('warn', 'Termination or expiration language is not obvious — add clear end dates or notice to exit.');
+      if (!t.includes('liabilit') && !t.includes('limitation of liability')) push('warn', 'Liability cap or exclusion section not spotted — consider caps, consequential damages, and insurance expectations.');
+      if (!t.includes('indemnif')) push('warn', 'Indemnity clause not clearly identified — define scope, procedure, and survival if disputes arise.');
+      if (t.includes('governing law') || t.includes('jurisdiction')) push('ok', 'Dispute resolution / governing law references found — confirm venue works for all parties.');
+      if (t.includes('payment') || t.includes('fee') || t.includes('invoice')) push('ok', 'Payment terms appear — align with tax, currency, late fees, and refund policy.');
+      if (t.includes('intellectual property') || t.includes(' ip ') || t.includes('work for hire')) push('ok', 'IP / ownership language present — double-check assignment vs license scope.');
+      if (t.includes('data') && (t.includes('gdpr') || t.includes('privacy'))) push('ok', 'Data / privacy references found — map to your DPA and subprocessors list.');
+      if (t.includes('warrant') && !t.includes('disclaimer')) push('warn', 'Warranties appear — balance with disclaimers "as is" where appropriate.');
+      if (t.includes('signature') || t.includes('executed')) push('ok', 'Execution / signature block language detected — ensure counterparties and dates are complete before send.');
+      if (bullets.filter(b => b.type === 'warn').length === 0 && wc >= 80) push('ok', 'No major red flags from quick scan — still have counsel review before binding use.');
+
+      let docType = 'General agreement';
+      if (t.includes('employment') || t.includes('offer letter')) docType = 'Employment / offer';
+      else if (t.includes('saas') || t.includes('subscription') || t.includes('service level')) docType = 'SaaS / subscription';
+      else if (t.includes('master service') || t.includes('msa')) docType = 'Master services';
+      else if (t.includes('non-disclosure') || t.includes('confidentiality')) docType = 'Confidentiality (NDA)';
+
+      const checklist = [
+        'Parties, roles, and effective date are explicit',
+        'Commercial terms (fees, term, renewal) match the deal you discussed',
+        'Data protection & security obligations fit your stack',
+        'Termination, suspension, and post-termination duties are clear',
+        'Notice addresses and e-sign / counterpart execution rules are correct'
+      ];
+
+      return { wordCount: wc, docType, bullets, checklist };
+    }
+
+    function formatAiAgreementHtml(result) {
+      const warns = result.bullets.filter(b => b.type === 'warn');
+      const oks = result.bullets.filter(b => b.type === 'ok');
+      const li = (arr) => arr.map(b => `<li>${escapeHtml(b.msg)}</li>`).join('');
+      return `<p class="text-sm text-slate-700"><span class="ai-chip ai-chip-ok">Model</span>Heuristic scan (instant). Word count: <strong>${result.wordCount}</strong> · Detected pattern: <strong>${escapeHtml(result.docType)}</strong></p>
+        <h4>Executive summary</h4>
+        <p>This draft was scanned for common agreement risk patterns. Use it to prepare questions for legal review—not as legal advice.</p>
+        ${warns.length ? `<h4>Attention items</h4><ul>${li(warns)}</ul>` : ''}
+        ${oks.length ? `<h4>Detected strengths / topics</h4><ul>${li(oks)}</ul>` : ''}
+        <h4>Send readiness checklist</h4>
+        <ul>${result.checklist.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`;
+    }
+
+    async function runAiAgreementAnalysis() {
+      const ta = document.getElementById('aiAgreementInput');
+      const out = document.getElementById('aiAgreementOutput');
+      const status = document.getElementById('aiAgreementStatus');
+      const raw = ta && ta.value ? ta.value.trim() : '';
+      if (!out) return;
+      if (!raw) {
+        out.innerHTML = '<p class="text-amber-700 text-sm">Paste agreement or clause text first.</p>';
+        return;
+      }
+      const apiBase = typeof window.SIGNPROZ_AI_AGREEMENT_API === 'string' ? window.SIGNPROZ_AI_AGREEMENT_API.replace(/\/+$/, '') : '';
+      if (apiBase) {
+        if (status) status.textContent = 'Calling your AI API…';
+        try {
+          const res = await fetch(apiBase + '/api/agreement-analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: raw })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && typeof data.html === 'string') {
+              out.innerHTML = data.html;
+              if (status) status.textContent = '';
+              addAudit('🤖 AI agreement review (API) completed.');
+              return;
+            }
+          }
+        } catch (err) {
+          if (status) status.textContent = 'API error — using built-in scan.';
+        }
+      }
+      if (status) status.textContent = '';
+      out.innerHTML = formatAiAgreementHtml(analyzeAgreementHeuristic(raw));
+      addAudit('🤖 AI agreement review (built-in) completed.');
+    }
+
     function initCanvasDrawing() {
       canvasEl = document.getElementById('signCanvas');
       if (!canvasEl) return;
@@ -1056,6 +1185,14 @@
         document.getElementById('closeAffiliateModalFooterBtn')?.addEventListener('click', () => affiliateModal.classList.add('hidden'));
         affiliateModal.addEventListener('click', (e) => { if (e.target === affiliateModal) affiliateModal.classList.add('hidden'); });
       }
+
+      const aiAgreementModal = document.getElementById('aiAgreementModal');
+      if (aiAgreementModal && !aiAgreementModal.hasListener) {
+        aiAgreementModal.hasListener = true;
+        document.getElementById('closeAiAgreementModalBtn')?.addEventListener('click', closeAiAgreementModal);
+        document.getElementById('aiAgreementRunBtn')?.addEventListener('click', () => { runAiAgreementAnalysis(); });
+        aiAgreementModal.addEventListener('click', (e) => { if (e.target === aiAgreementModal) closeAiAgreementModal(); });
+      }
     }
 
     function renderHeader() {
@@ -1071,7 +1208,7 @@
     }
 
     function renderHomePage() { 
-      return `<div class="max-w-6xl mx-auto px-4 py-12"><div class="text-center"><h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1><p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">Join the SignProz Affiliate Program and earn 20-30% recurring commission on every referral.</p><div class="mt-8 flex flex-wrap gap-4 justify-center"><button type="button" data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button><button type="button" data-nav="affiliate" class="border border-gray-300 px-6 py-3 rounded-xl font-medium hover:border-blue-300 hover:text-blue-700">View Program Details</button><button type="button" data-nav="demo" class="text-blue-600 border border-blue-200 bg-blue-50 px-6 py-3 rounded-xl font-medium hover:bg-blue-100">Product demo</button></div><div class="mt-16 grid md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$12k+ in 3 Years</h3><p>Realistic part-time earnings projection.</p></div></div></div></div>`;
+      return `<div class="max-w-6xl mx-auto px-4 py-12"><div class="text-center"><h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1><p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">Join the SignProz Affiliate Program and earn 20-30% recurring commission on every referral.</p><div class="mt-8 flex flex-wrap gap-4 justify-center"><button type="button" data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button><button type="button" data-nav="affiliate" class="border border-gray-300 px-6 py-3 rounded-xl font-medium hover:border-blue-300 hover:text-blue-700">View Program Details</button><button type="button" data-nav="demo" class="text-blue-600 border border-blue-200 bg-blue-50 px-6 py-3 rounded-xl font-medium hover:bg-blue-100">Product demo</button></div><div class="mt-16 grid md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$40k+ in 3 Years</h3><p>Illustrative part-time affiliate projection (36 / 84 / 144 new referrals by year).</p></div></div></div></div>`;
     }
 
     function renderAffiliatePage() {
@@ -1149,7 +1286,7 @@
             <i class="fas fa-table text-indigo-600 text-2xl"></i>
             <h2 class="text-2xl font-bold text-slate-900">3-Year Revenue Projection</h2>
           </div>
-          <p class="text-sm text-slate-600 max-w-3xl mb-6 text-center lg:text-left">Illustrative earnings based on realistic part-time effort (about 1–2 hours per week), 20% base commission rising toward 30% as you tier up. Not a guarantee—your results depend on audience and effort.</p>
+          <p class="text-sm text-slate-600 max-w-3xl mb-6 text-center lg:text-left">Illustrative earnings based on part-time effort (about 1–2 hours per week), with <strong class="text-slate-800">36 / 84 / 144</strong> new paid referrals in years 1–3, 20% base commission rising toward 30% as you tier up. Figures are modeled, not a guarantee—your results depend on audience and effort.</p>
           <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="w-full text-sm projection-table min-w-[640px]">
               <thead><tr class="bg-slate-50 text-left"><th class="p-3 font-semibold text-slate-700">Year</th><th class="p-3 font-semibold text-slate-700">New referrals</th><th class="p-3 font-semibold text-slate-700">Cumulative referrals</th><th class="p-3 font-semibold text-slate-700">Projected earnings</th><th class="p-3 font-semibold text-slate-700">Avg / month</th><th class="p-3 font-semibold text-slate-700">Run-rate (end of year)</th></tr></thead>
@@ -1579,10 +1716,11 @@
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h3 class="font-bold mb-3 text-gray-900"><i class="fas fa-file-signature text-blue-600 mr-2"></i>Prepare &amp; send</h3>
-          <div class="flex gap-2 mb-4 flex-wrap">
+          <div class="flex gap-2 mb-4 flex-wrap items-center">
             <button type="button" id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button>
             <button type="button" id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button>
             <button type="button" id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button>
+            <button type="button" id="openAiAgreementFromWorkspaceBtn" class="bg-violet-100 text-violet-800 border border-violet-200 px-3 py-1 rounded-full text-sm font-medium hover:bg-violet-200"><i class="fas fa-magic mr-1" aria-hidden="true"></i> AI agreement review</button>
           </div>
           <div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);">
             <div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Drag tiles from <strong>Sign &amp; Edit</strong> / <strong>Add fields</strong>, or turn on <strong>Add Signature Field</strong> and click the page.</p></div>
@@ -1736,7 +1874,8 @@
       const bulkSidebar = document.getElementById('dashSidebarBulkSend');
       if (bulkSidebar) bulkSidebar.onclick = () => openBulkSendModal();
       document.getElementById('dashSidebarTeamBtn')?.addEventListener('click', () => alert('Demo: Team — shared workspaces, roles, and SSO appear here in the full product.'));
-      document.getElementById('dashSidebarAiBtn')?.addEventListener('click', () => alert('Demo: AI Assistant — summarize envelopes, suggest fields, and answer policy questions (preview).'));
+      document.getElementById('dashSidebarAiBtn')?.addEventListener('click', () => openAiAgreementModal());
+      document.getElementById('openAiAgreementFromWorkspaceBtn')?.addEventListener('click', () => openAiAgreementModal());
 
       const signerSel = document.getElementById('signer-dropdown');
       if (signerSel) {
