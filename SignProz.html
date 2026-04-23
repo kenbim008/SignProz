@@ -1527,27 +1527,57 @@
         'Workflow Automation',
         'Affordable API'
       ];
-      return `<div class="max-w-6xl mx-auto px-4 py-12">
-        <div class="text-center">
-          <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1>
-          <p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">SignProz combines digital agreements, flexible signing workflows, and recurring affiliate growth tools.</p>
-          <div class="mt-8 flex flex-wrap gap-4 justify-center">
-            <button type="button" data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button>
-            <button type="button" data-nav="affiliate" class="border border-gray-300 px-6 py-3 rounded-xl font-medium hover:border-blue-300 hover:text-blue-700">View Program Details</button>
-            <button type="button" data-nav="demo" class="text-blue-600 border border-blue-200 bg-blue-50 px-6 py-3 rounded-xl font-medium hover:bg-blue-100">Product demo</button>
-            <button type="button" id="openAiFaqFromHomeBtn" class="bg-indigo-100 border border-indigo-200 text-indigo-800 px-6 py-3 rounded-xl font-medium hover:bg-indigo-200">AI FAQ Chat</button>
+      return `<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <section class="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white p-8 sm:p-12 shadow-2xl">
+          <div class="grid lg:grid-cols-12 gap-8 items-center">
+            <div class="lg:col-span-7">
+              <p class="text-xs uppercase tracking-[0.16em] text-indigo-200 font-semibold mb-3">Secure eSignature platform</p>
+              <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight">Professional agreement workflows for modern teams</h1>
+              <p class="text-indigo-100 text-sm sm:text-base mt-4 max-w-2xl">SignProz helps you prepare, send, sign, and track agreements at scale while offering partner rewards and API-ready automation.</p>
+              <div class="mt-7 flex flex-wrap gap-3">
+                <button type="button" data-nav="signup" class="bg-white text-indigo-800 px-5 py-2.5 rounded-xl font-semibold text-sm shadow hover:bg-indigo-50">Start free trial</button>
+                <button type="button" data-nav="pricing" class="border border-white/30 bg-white/10 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/20">View pricing</button>
+                <button type="button" data-nav="templates" class="border border-white/30 bg-white/10 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/20">Explore templates</button>
+                <button type="button" id="openAiFaqFromHomeBtn" class="border border-cyan-200/60 bg-cyan-400/20 text-cyan-50 px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-cyan-400/30">AI FAQ Chat</button>
+              </div>
+            </div>
+            <div class="lg:col-span-5">
+              <div class="rounded-2xl bg-white/10 border border-white/15 p-5">
+                <h3 class="font-semibold text-white mb-4">At a glance</h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div class="rounded-xl bg-white/10 p-3"><p class="text-indigo-200 text-xs">Integrations</p><p class="font-bold text-lg">400+</p></div>
+                  <div class="rounded-xl bg-white/10 p-3"><p class="text-indigo-200 text-xs">Affiliate reward</p><p class="font-bold text-lg">20-30%</p></div>
+                  <div class="rounded-xl bg-white/10 p-3"><p class="text-indigo-200 text-xs">Sending modes</p><p class="font-bold text-lg">Bulk + SMS</p></div>
+                  <div class="rounded-xl bg-white/10 p-3"><p class="text-indigo-200 text-xs">Security</p><p class="font-bold text-lg">HIPAA-ready</p></div>
+                </div>
+                <p class="text-[11px] text-indigo-100 mt-4">Designed for sales, legal operations, HR, and customer onboarding teams.</p>
+              </div>
+            </div>
           </div>
-          <div class="mt-16 grid md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$40k+ in 3 Years</h3><p>Illustrative part-time affiliate projection (36 / 84 / 144 new referrals by year).</p></div>
-          </div>
-        </div>
+        </section>
 
-        <section class="mt-14 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <section class="mt-10 grid md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><i class="fas fa-file-signature"></i></div>
+            <h3 class="font-bold text-slate-900 mt-3">Document Workspace</h3>
+            <p class="text-sm text-slate-600 mt-1">Build, route, and manage agreement packets with reusable templates and signing links.</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"><i class="fas fa-robot"></i></div>
+            <h3 class="font-bold text-slate-900 mt-3">AI-Assisted Agreements</h3>
+            <p class="text-sm text-slate-600 mt-1">Speed up reviews and drafting with AI assistance for clauses, summaries, and templates.</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center"><i class="fas fa-hand-holding-usd"></i></div>
+            <h3 class="font-bold text-slate-900 mt-3">Recurring Affiliate Rewards</h3>
+            <p class="text-sm text-slate-600 mt-1">Earn ongoing commissions with transparent tiering and built-in referral analytics.</p>
+          </div>
+        </section>
+
+        <section class="mt-10 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
             <h2 class="text-xl font-bold text-slate-900"><i class="fas fa-layer-group text-indigo-600 mr-2"></i>Key Features</h2>
-            <span class="text-xs text-slate-500">Core capabilities available in SignProz</span>
+            <span class="text-xs text-slate-500">Production-ready capabilities</span>
           </div>
           <div class="flex flex-wrap gap-2">
             ${keyFeatures.map((f) => `<span class="feature-pill"><i class="fas fa-check-circle text-blue-500"></i>${escapeHtml(f)}</span>`).join('')}
@@ -1557,8 +1587,8 @@
         <section class="mt-10 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-6 shadow-sm">
           <div class="flex flex-wrap justify-between gap-4 items-start">
             <div>
-              <h3 class="text-lg font-bold text-slate-900 mb-1"><i class="fas fa-robot text-indigo-600 mr-2"></i>AI Assisted Chatbot FAQ</h3>
-              <p class="text-sm text-slate-600 max-w-2xl">Get quick answers about integrations, compliance, API usage, pricing, and signing workflows.</p>
+              <h3 class="text-lg font-bold text-slate-900 mb-1"><i class="fas fa-comments text-indigo-600 mr-2"></i>AI Assisted Chatbot FAQ</h3>
+              <p class="text-sm text-slate-600 max-w-2xl">Get quick, practical answers about integrations, compliance, API usage, pricing, and signing workflows.</p>
             </div>
             <button type="button" id="openAiFaqFromFeatureBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">Open AI FAQ</button>
           </div>
