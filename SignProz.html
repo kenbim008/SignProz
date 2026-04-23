@@ -250,6 +250,79 @@
     .signproz-editor-sidebar .edit-link:hover { text-decoration: underline; }
     .signproz-editor-sidebar .field-item { border-left: 3px solid #3b82f6; }
     #documentPreview.document-drop-target { outline: 2px dashed #93c5fd; outline-offset: 2px; }
+
+    .dashboard-subscriber-shell {
+      background: linear-gradient(to bottom, #fff 0%, #f8fafc 100%);
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .dashboard-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 10px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .dashboard-tab {
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+    }
+    .dashboard-tab:hover { color: #2563eb; background: rgba(239, 246, 255, 0.6); }
+    .dashboard-tab[aria-selected="true"] {
+      color: #1d4ed8;
+      border-bottom-color: #2563eb;
+      background: #fff;
+    }
+    .dash-doc-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      transition: box-shadow 0.15s ease;
+    }
+    .dash-doc-row:hover { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08); }
+    @media (min-width: 640px) {
+      .dash-doc-row {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+    .dash-doc-thumb {
+      width: 52px;
+      height: 68px;
+      flex-shrink: 0;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+    }
+    .dash-doc-status {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .dash-doc-status-signed { background: #dcfce7; color: #15803d; }
+    .dash-doc-status-waiting { background: #fef9c3; color: #a16207; }
+    .dash-doc-status-draft { background: #f1f5f9; color: #475569; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-gray-100">
@@ -374,6 +447,10 @@
     let dashboardSidebarSection = 'documents';
     /** Active signer for fields dropped from the editor palette */
     let dashboardActiveSignerId = null;
+    /** Subscriber dashboard main area: workspace | referrals */
+    let dashboardMainTab = 'workspace';
+    /** Filters demo document list in Document Workspace */
+    let dashboardEnvelopeSearch = '';
     
     function setActivePage(page, pushState = true) {
       if (!page || !KNOWN_PAGES.has(page)) page = 'home';
@@ -512,6 +589,8 @@
       auditLog = [];
       addFieldMode = false;
       dashboardSidebarSection = 'documents';
+      dashboardMainTab = 'workspace';
+      dashboardEnvelopeSearch = '';
       setActivePage('home');
     }
 
@@ -568,6 +647,7 @@
     function loadTemplate(templateId) {
       const template = templates.find(t => t.id === templateId);
       if (!template) return;
+      dashboardMainTab = 'workspace';
       signatureFields = template.fields.map((f, idx) => ({
         id: genId(),
         kind: 'signature',
@@ -1226,12 +1306,159 @@
       return `<div class="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">${msg}</div>`;
     }
 
+    function dashboardDemoEnvelopes() {
+      const me = (currentUser && currentUser.email) ? currentUser.email : '';
+      return [
+        { id: 'env1', name: 'NDA — Motionworks.pdf', date: 'Apr 18, 2026', status: 'Waiting for others', senderEmail: me, recipientEmail: 'client@acme.com' },
+        { id: 'env2', name: 'Service Agreement.pdf', date: 'Apr 12, 2026', status: 'Signed', senderEmail: me, recipientEmail: 'vendor@vendor.io' },
+        { id: 'env3', name: 'Offer Letter — Draft.docx', date: 'Apr 20, 2026', status: 'Draft', senderEmail: me, recipientEmail: '—' }
+      ];
+    }
+
+    function getFilteredDashboardEnvelopes() {
+      const q = (dashboardEnvelopeSearch || '').trim().toLowerCase();
+      const rows = dashboardDemoEnvelopes();
+      if (!q) return rows;
+      return rows.filter(d => String(d.name || '').toLowerCase().includes(q));
+    }
+
+    function envelopeStatusBadgeClass(status) {
+      if (status === 'Signed') return 'dash-doc-status-signed';
+      if (status === 'Draft') return 'dash-doc-status-draft';
+      return 'dash-doc-status-waiting';
+    }
+
+    function buildDashboardEnvelopeRowsHtml() {
+      return getFilteredDashboardEnvelopes().map(doc => {
+        const st = envelopeStatusBadgeClass(doc.status);
+        return `<div class="dash-doc-row" data-doc-id="${escapeHtml(doc.id)}">
+          <div class="flex items-center gap-4 flex-1 min-w-0">
+            <div class="dash-doc-thumb" aria-hidden="true"><i class="fas fa-file-alt text-xl"></i></div>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-semibold text-gray-800 text-sm sm:text-base truncate">${escapeHtml(doc.name)}</h4>
+              <p class="text-xs text-gray-500 mt-0.5">${escapeHtml(doc.date)}<span class="dash-doc-status ${st}">${escapeHtml(doc.status)}</span></p>
+              <div class="flex flex-wrap gap-4 mt-1 text-xs text-gray-600">
+                <span><i class="fas fa-check-circle text-green-500 mr-1"></i>${escapeHtml(doc.senderEmail)}</span>
+                <span><i class="fas fa-envelope text-blue-500 mr-1"></i>${escapeHtml(doc.recipientEmail)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button type="button" class="dash-doc-sign-btn px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 text-gray-700">Sign</button>
+            <button type="button" class="dash-doc-send-btn flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 text-gray-700"><i class="fas fa-paper-plane text-xs text-blue-600"></i>Send for signing</button>
+            <button type="button" class="dash-doc-more-btn p-2 text-gray-500 hover:bg-gray-100 rounded-lg" title="More"><i class="fas fa-ellipsis-v"></i></button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
     function renderDashboard() {
       if (!currentUser) return '<div class="p-10 text-center">Please login</div>';
-      const sidebar = renderDashboardSidebar();
-      const editorSidebar = renderDashboardEditorSidebar();
-      const mainInner = `<div class="max-w-7xl mx-auto px-2 sm:px-4 py-6">${dashboardDocFilterBannerHtml()}<div class="flex flex-wrap justify-between items-center mb-4"><div><h2 class="text-2xl font-bold">Subscriber portal</h2><p class="text-sm text-gray-500">Welcome, ${currentUser.email} | Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded">${currentUser.affiliateCode}</strong></p></div><div class="flex gap-2"><button type="button" id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-link"></i> Copy Referral Link</button><button type="button" id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm"><i class="fas fa-chart-line"></i> Load Sample</button></div></div><div class="grid lg:grid-cols-12 gap-6"><div class="lg:col-span-5"><div class="referral-stats-card rounded-2xl p-6 shadow-sm"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals &amp; Rewards</h3><button type="button" data-nav="affiliate" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button><p class="text-xs text-gray-400 mb-2">Live stats from API</p><div class="grid grid-cols-2 gap-4 mt-2"><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-total-referrals" class="text-3xl font-bold text-gray-800">…</div><div class="text-xs text-gray-500">Total referrals</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-active-accounts" class="text-3xl font-bold text-green-600">…</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div><div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-expected-payout" class="text-3xl font-bold text-blue-600">…</div><div class="text-xs text-gray-500">Expected payout</div></div><div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div></div><div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div><div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div></div></div><div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-chart-line"></i> 3-Year Earnings Projection</h3><p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p><table class="w-full text-sm projection-table"><thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead><tbody><tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr><tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr><tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr></tbody></table><div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div></div></div><div class="mt-6"><div class="bg-white rounded-2xl p-5 shadow-sm"><h3 class="font-bold mb-3"><i class="fas fa-file-signature"></i> Document Workspace</h3><div class="flex gap-2 mb-4 flex-wrap"><button type="button" id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button><button type="button" id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button><button type="button" id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button></div><div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);"><div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Drag tiles from <strong>Sign &amp; Edit</strong> / <strong>Add fields</strong>, or turn on <strong>Add Signature Field</strong> and click the page.</p></div><div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div></div><div id="signersList" class="mt-3 flex flex-wrap gap-2"></div><button type="button" id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button><div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div></div></div></div>`;
-      return `<div class="dashboard-portal-wrapper flex flex-col lg:flex-row w-full max-w-[1800px] mx-auto">${sidebar}${editorSidebar}<div class="dashboard-main-area flex-1 min-w-0 w-full bg-gradient-to-br from-slate-50/50 to-transparent">${mainInner}</div></div>`;
+      const isWorkspace = dashboardMainTab === 'workspace';
+      const isReferrals = dashboardMainTab === 'referrals';
+      const sidebar = isWorkspace ? renderDashboardSidebar() : '';
+      const editorSidebar = isWorkspace ? renderDashboardEditorSidebar() : '';
+
+      const subscriberHeader = `<div class="dashboard-subscriber-shell px-3 sm:px-5 pt-4 pb-0">
+        <div class="max-w-[1800px] mx-auto">
+          <div class="flex flex-wrap justify-between items-center gap-3 pb-2">
+            <div>
+              <h2 class="text-2xl font-bold text-slate-900">Subscriber portal</h2>
+              <p class="text-sm text-gray-500">Welcome, ${escapeHtml(currentUser.email)} · Your code: <strong class="bg-gray-100 px-2 py-0.5 rounded font-mono text-sm">${escapeHtml(currentUser.affiliateCode)}</strong></p>
+            </div>
+          </div>
+          <nav class="dashboard-tabs" role="tablist" aria-label="Subscriber portal sections">
+            <button type="button" role="tab" class="dashboard-tab" aria-selected="${isWorkspace}" data-dashboard-tab="workspace">Document Workspace</button>
+            <button type="button" role="tab" class="dashboard-tab" aria-selected="${isReferrals}" data-dashboard-tab="referrals">Referrals &amp; Rewards</button>
+          </nav>
+        </div>
+      </div>`;
+
+      const referralsGrid = `<div class="grid lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5">
+          <div class="referral-stats-card rounded-2xl p-6 shadow-sm">
+            <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-gift text-purple-600"></i> Referrals &amp; Rewards</h3>
+            <button type="button" data-nav="affiliate" class="text-blue-600 text-sm underline mb-4 inline-block">View program details →</button>
+            <p class="text-xs text-gray-400 mb-2">Live stats from API</p>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-total-referrals" class="text-3xl font-bold text-gray-800">…</div><div class="text-xs text-gray-500">Total referrals</div></div>
+              <div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-active-accounts" class="text-3xl font-bold text-green-600">…</div><div class="text-xs text-gray-500">Active (paid accounts)</div></div>
+              <div class="bg-white rounded-xl p-3 text-center"><div id="dash-api-expected-payout" class="text-3xl font-bold text-blue-600">…</div><div class="text-xs text-gray-500">Expected payout</div></div>
+              <div class="bg-white rounded-xl p-3 text-center"><div class="text-3xl font-bold text-gray-800">$${currentUser.referralEarnings.toFixed(2)}</div><div class="text-xs text-gray-500">Paid out</div></div>
+            </div>
+            <div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div>
+            <div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div>
+          </div>
+        </div>
+        <div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <h3 class="font-bold mb-3"><i class="fas fa-chart-line text-blue-600"></i> 3-Year Earnings Projection</h3>
+          <p class="text-xs text-gray-500 mb-3">Based on realistic part-time effort (1-2 hours/week). Assumes 20% commission, upgrading to 30% over time.</p>
+          <table class="w-full text-sm projection-table">
+            <thead><tr class="bg-gray-50"><th class="text-left p-2">Year</th><th class="text-left p-2">New Referrals</th><th class="text-left p-2">Total</th><th class="text-left p-2">Earnings</th><th class="text-left p-2">Avg Monthly</th><th class="text-left p-2">End Monthly</th></tr></thead>
+            <tbody>
+              <tr><td class="p-2 font-medium">Year 1</td><td class="p-2">${revenueProjection.year1.newReferrals}</td><td class="p-2">${revenueProjection.year1.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year1.earnings}</td><td class="p-2">$${revenueProjection.year1.avgMonthly}</td><td class="p-2">$${revenueProjection.year1.endMonthly}</td></tr>
+              <tr><td class="p-2 font-medium">Year 2</td><td class="p-2">${revenueProjection.year2.newReferrals}</td><td class="p-2">${revenueProjection.year2.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year2.earnings}</td><td class="p-2">$${revenueProjection.year2.avgMonthly}</td><td class="p-2">$${revenueProjection.year2.endMonthly}</td></tr>
+              <tr><td class="p-2 font-medium">Year 3</td><td class="p-2">${revenueProjection.year3.newReferrals}</td><td class="p-2">${revenueProjection.year3.totalReferrals}</td><td class="p-2 text-green-700 font-semibold">$${revenueProjection.year3.earnings}</td><td class="p-2">$${revenueProjection.year3.avgMonthly}</td><td class="p-2">$${revenueProjection.year3.endMonthly}</td></tr>
+              <tr class="bg-blue-50"><td class="p-2 font-bold">TOTAL</td><td class="p-2">${revenueProjection.total.referrals}</td><td class="p-2"></td><td class="p-2 font-bold text-blue-700">$${revenueProjection.total.earnings}</td><td class="p-2"></td><td class="p-2 font-bold">~$${revenueProjection.year3.endMonthly}/mo</td></tr>
+            </tbody>
+          </table>
+          <div class="mt-3 bg-green-50 p-3 rounded-lg"><p class="text-xs text-green-800"><i class="fas fa-info-circle"></i> <strong>Non-aggressive projection:</strong> Part-time effort (1-2 hours/week). Double these numbers with full-time effort (5-10 hours/week). Commissions increase as you tier up to 30%.</p></div>
+        </div>
+      </div>`;
+
+      const referralsPanel = `<div class="max-w-7xl mx-auto px-2 sm:px-4 py-6">
+        <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+          <p class="text-sm text-gray-600 max-w-xl">Track live referral stats, expected payouts, and a long-range earnings projection.</p>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="copyAffiliateLinkBtn" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium"><i class="fas fa-link"></i> Copy Referral Link</button>
+            <button type="button" id="sampleDataBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium"><i class="fas fa-chart-line"></i> Load Sample</button>
+          </div>
+        </div>
+        ${referralsGrid}
+        <div class="mt-8 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <h3 class="font-bold text-gray-900 mb-2">Recent referral activity</h3>
+          <p class="text-xs text-gray-500 mb-3">Use <strong>Load sample</strong> above to populate this list.</p>
+          <div id="referralsList" class="space-y-2"></div>
+        </div>
+      </div>`;
+
+      const workspacePanel = `<div class="max-w-7xl mx-auto px-2 sm:px-4 py-6">
+        ${dashboardDocFilterBannerHtml()}
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h3 class="font-bold text-lg text-gray-900"><i class="fas fa-folder-open text-blue-600 mr-2"></i>Documents</h3>
+            <div class="relative w-full sm:max-w-xs sm:ml-auto">
+              <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+              <input type="search" id="workspaceEnvelopeSearch" class="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none" placeholder="Search documents…" value="${escapeHtml(dashboardEnvelopeSearch)}" autocomplete="off">
+            </div>
+          </div>
+          <div id="workspaceEnvelopeList">${buildDashboardEnvelopeRowsHtml()}</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <h3 class="font-bold mb-3 text-gray-900"><i class="fas fa-file-signature text-blue-600 mr-2"></i>Prepare &amp; send</h3>
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button type="button" id="toggleAddModeBtn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"><i class="fas fa-plus"></i> Add Signature Field</button>
+            <button type="button" id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button>
+            <button type="button" id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button>
+          </div>
+          <div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);">
+            <div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Drag tiles from <strong>Sign &amp; Edit</strong> / <strong>Add fields</strong>, or turn on <strong>Add Signature Field</strong> and click the page.</p></div>
+            <div id="dynamicFieldsContainer" class="absolute inset-0 p-6 pointer-events-none"></div>
+          </div>
+          <div id="signersList" class="mt-3 flex flex-wrap gap-2"></div>
+          <button type="button" id="addSignerBtn" class="mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full">+ Add Signer</button>
+          <div class="mt-3 text-xs text-gray-400">Audit log available in full version.</div>
+        </div>
+      </div>`;
+
+      const mainInner = isWorkspace ? workspacePanel : referralsPanel;
+      return `<div class="dashboard-portal-wrapper flex flex-col w-full max-w-[1800px] mx-auto">
+        ${subscriberHeader}
+        <div class="flex flex-col lg:flex-row flex-1 min-w-0 items-stretch">
+          ${sidebar}${editorSidebar}
+          <div class="dashboard-main-area flex-1 min-w-0 w-full bg-gradient-to-br from-slate-50/50 to-transparent">${mainInner}</div>
+        </div>
+      </div>`;
     }
 
     function renderDashboardContent() {
@@ -1259,8 +1486,38 @@
     }
 
     function initDashboardEvents() {
+      document.querySelectorAll('[data-dashboard-tab]').forEach((btn) => {
+        btn.onclick = () => {
+          const t = btn.getAttribute('data-dashboard-tab');
+          if (t === 'workspace' || t === 'referrals') {
+            dashboardMainTab = t;
+            renderApp();
+          }
+        };
+      });
+
+      const searchEl = document.getElementById('workspaceEnvelopeSearch');
+      if (searchEl) {
+        searchEl.oninput = () => {
+          dashboardEnvelopeSearch = searchEl.value;
+          const list = document.getElementById('workspaceEnvelopeList');
+          if (list) list.innerHTML = buildDashboardEnvelopeRowsHtml();
+        };
+      }
+
+      const envelopeList = document.getElementById('workspaceEnvelopeList');
+      if (envelopeList) {
+        envelopeList.onclick = (e) => {
+          const signB = e.target.closest && e.target.closest('.dash-doc-sign-btn');
+          const sendB = e.target.closest && e.target.closest('.dash-doc-send-btn');
+          const moreB = e.target.closest && e.target.closest('.dash-doc-more-btn');
+          if (signB) { e.preventDefault(); alert('Demo: Sign opens the signing experience for this envelope.'); }
+          else if (sendB) { e.preventDefault(); alert('Demo: Send for signing queues recipients and email reminders.'); }
+          else if (moreB) { e.preventDefault(); alert('Demo: More actions — rename, duplicate, download, or remove.'); }
+        };
+      }
+
       const container = document.getElementById('documentPreview');
-      if (!container) return;
       
       const toggleBtn = document.getElementById('toggleAddModeBtn');
       if (toggleBtn) toggleBtn.onclick = () => { addFieldMode = !addFieldMode; document.getElementById('addModeBadge')?.classList.toggle('hidden'); };
@@ -1289,7 +1546,10 @@
         renderApp();
       });
       
-      container.addEventListener('click', (e) => { if(!addFieldMode) return; const rect = document.getElementById('dynamicFieldsContainer').getBoundingClientRect(); const x = ((e.clientX - rect.left)/rect.width)*100; const y = ((e.clientY - rect.top)/rect.height)*100; if(x>=0 && x<=100 && y>=0 && y<=100) addSignatureFieldAt(x,y); });
+      if (container && !container._signprozFieldClickBound) {
+        container._signprozFieldClickBound = true;
+        container.addEventListener('click', (e) => { if(!addFieldMode) return; const rect = document.getElementById('dynamicFieldsContainer').getBoundingClientRect(); const x = ((e.clientX - rect.left)/rect.width)*100; const y = ((e.clientY - rect.top)/rect.height)*100; if(x>=0 && x<=100 && y>=0 && y<=100) addSignatureFieldAt(x,y); });
+      }
 
       const dashFileInput = document.getElementById('dashSidebarFileInput');
       const dashUploadBtn = document.getElementById('dashUploadDocBtn');
@@ -1389,7 +1649,7 @@
       }
 
       renderDashboardContent();
-      fetchReferralStatsFromApi();
+      if (document.getElementById('dash-api-total-referrals')) fetchReferralStatsFromApi();
     }
 
     function attachGlobalEvents() {
