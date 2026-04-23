@@ -375,6 +375,71 @@
     #aiAgreementModal .ai-chip { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px; margin-right: 0.35rem; }
     #aiAgreementModal .ai-chip-warn { background: #fef3c7; color: #92400e; }
     #aiAgreementModal .ai-chip-ok { background: #dcfce7; color: #166534; }
+    .feature-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #dbeafe;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .home-faq-bubble {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 35;
+      border-radius: 9999px;
+      background: linear-gradient(120deg, #4f46e5 0%, #1d4ed8 100%);
+      color: #fff;
+      border: none;
+      padding: 0.65rem 0.95rem;
+      box-shadow: 0 10px 24px rgba(29, 78, 216, 0.28);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .home-faq-bubble:hover { filter: brightness(1.05); }
+    @media (max-width: 767px) {
+      .home-faq-bubble { right: 0.7rem; bottom: 0.75rem; padding: 0.55rem 0.8rem; }
+    }
+    #aiFaqModal .faq-msg-user {
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px 12px 2px 12px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.82rem;
+      color: #1e3a8a;
+      max-width: 85%;
+      margin-left: auto;
+      margin-bottom: 0.45rem;
+    }
+    #aiFaqModal .faq-msg-bot {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px 12px 12px 2px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.82rem;
+      color: #334155;
+      max-width: 90%;
+      margin-right: auto;
+      margin-bottom: 0.45rem;
+      white-space: pre-wrap;
+    }
+    #aiTemplateModal .ai-template-output h4 {
+      margin: 0.65rem 0 0.3rem;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    #aiTemplateModal .ai-template-output p,
+    #aiTemplateModal .ai-template-output li {
+      font-size: 0.84rem;
+      color: #334155;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-gray-100">
@@ -473,6 +538,59 @@
     </div>
   </div>
 
+  <!-- AI FAQ Assistant -->
+  <div id="aiFaqModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
+      <div class="px-5 py-4 bg-gradient-to-r from-indigo-600 to-blue-700 text-white flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-comments"></i> AI FAQ assistant</h3>
+          <p class="text-xs text-indigo-100 mt-0.5">Ask about plans, API, integrations, compliance, and signing flow.</p>
+        </div>
+        <button type="button" id="closeAiFaqModalBtn" class="p-2 rounded-lg hover:bg-white/10" aria-label="Close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-4 flex-1 overflow-y-auto bg-slate-50/70">
+        <div id="aiFaqMessages"></div>
+      </div>
+      <div class="p-4 border-t bg-white">
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button type="button" class="faq-quick-btn text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full" data-faq-q="How does affiliate commission work?">Affiliate commission</button>
+          <button type="button" class="faq-quick-btn text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full" data-faq-q="What API and integrations are supported?">API & integrations</button>
+          <button type="button" class="faq-quick-btn text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full" data-faq-q="How do I send documents in bulk?">Bulk sending</button>
+          <button type="button" class="faq-quick-btn text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full" data-faq-q="Do you support HIPAA compliant workflows?">HIPAA</button>
+        </div>
+        <div class="flex gap-2">
+          <input id="aiFaqInput" type="text" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none" placeholder="Ask SignProz a question...">
+          <button type="button" id="aiFaqSendBtn" class="btn-primary text-white px-4 py-2 rounded-xl text-sm font-semibold">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Template Generation -->
+  <div id="aiTemplateModal" class="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+      <div class="bg-gradient-to-r from-teal-600 to-cyan-700 px-5 py-4 flex justify-between items-center gap-3 flex-shrink-0">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fas fa-file-circle-plus"></i> AI document / template generation</h3>
+          <p class="text-xs text-cyan-100 mt-0.5">Describe what you need; SignProz will draft a starter template and fields.</p>
+        </div>
+        <button type="button" id="closeAiTemplateModalBtn" class="text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/10" aria-label="Close"><i class="fas fa-times text-xl"></i></button>
+      </div>
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+        <label for="aiTemplatePromptInput" class="block text-sm font-semibold text-slate-800">Template request</label>
+        <textarea id="aiTemplatePromptInput" class="w-full border border-slate-200 rounded-xl p-3 text-sm min-h-[120px] focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 outline-none" placeholder="Example: Generate a 2-party SaaS agreement template with NDA clause, payment terms, and signature blocks."></textarea>
+        <div class="flex flex-wrap gap-2 items-center">
+          <button type="button" id="aiTemplateRunBtn" class="btn-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow"><i class="fas fa-sparkles mr-2" aria-hidden="true"></i>Generate draft</button>
+          <button type="button" id="aiTemplateApplyBtn" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow disabled:opacity-40 disabled:cursor-not-allowed" disabled><i class="fas fa-plus mr-2" aria-hidden="true"></i>Create template</button>
+          <span id="aiTemplateStatus" class="text-xs text-slate-500"></span>
+        </div>
+        <div id="aiTemplateOutput" class="ai-template-output rounded-xl border border-slate-100 bg-slate-50/80 p-4 min-h-[120px] text-left">
+          <p class="text-sm text-slate-500">Draft summary appears here. Click <strong>Create template</strong> to add it to your template library.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="addModeBadge" class="hidden fixed bottom-6 right-6 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg text-sm z-40"><i class="fas fa-hand-pointer"></i> Add mode active</div>
 
   <script>
@@ -528,6 +646,10 @@
     let dashboardMainTab = 'workspace';
     /** Filters demo document list in Document Workspace */
     let dashboardEnvelopeSearch = '';
+    /** Home AI FAQ messages (simple local assistant) */
+    let aiFaqHistory = [];
+    /** Holds last generated template draft before user applies */
+    let aiGeneratedTemplateDraft = null;
     
     function setActivePage(page, pushState = true) {
       if (!page || !KNOWN_PAGES.has(page)) page = 'home';
@@ -668,6 +790,7 @@
       dashboardSidebarSection = 'documents';
       dashboardMainTab = 'workspace';
       dashboardEnvelopeSearch = '';
+      aiGeneratedTemplateDraft = null;
       setActivePage('home');
     }
 
@@ -1136,6 +1259,149 @@
       addAudit('🤖 AI agreement review (built-in) completed.');
     }
 
+    function openAiFaqModal(seedQuestion) {
+      const modal = document.getElementById('aiFaqModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      const input = document.getElementById('aiFaqInput');
+      if (input) input.focus();
+      if (aiFaqHistory.length === 0) {
+        aiFaqHistory.push({
+          role: 'bot',
+          text: 'Hi! I can answer SignProz product FAQs: plans, integrations, API, compliance, and sending workflows.'
+        });
+      }
+      if (seedQuestion) {
+        const q = String(seedQuestion).trim();
+        if (q) {
+          aiFaqHistory.push({ role: 'user', text: q });
+          aiFaqHistory.push({ role: 'bot', text: answerAiFaqQuestion(q) });
+        }
+      }
+      renderAiFaqMessages();
+    }
+
+    function closeAiFaqModal() {
+      document.getElementById('aiFaqModal')?.classList.add('hidden');
+    }
+
+    function answerAiFaqQuestion(question) {
+      const q = String(question || '').toLowerCase();
+      if (q.includes('commission') || q.includes('affiliate') || q.includes('reward')) {
+        return 'SignProz affiliate rewards are recurring commissions on qualified paid referrals.\n- Bronze: 20%\n- Silver: 22%\n- Gold: 25%\n- Platinum: 30%\nPayouts are monthly, with tracking visible inside your dashboard.';
+      }
+      if (q.includes('integrat') || q.includes('microsoft') || q.includes('crm') || q.includes('api')) {
+        return 'SignProz supports API-driven workflows and integration-friendly architecture.\nKey areas include Microsoft 365, Sales CRM integrations, 400+ connected apps via automation tools, and an affordable API for custom workflows.';
+      }
+      if (q.includes('hipaa') || q.includes('compliance') || q.includes('security')) {
+        return 'For HIPAA-oriented workflows, ensure BAA process, audit logging, least-privilege access, encryption at rest/in transit, and secure retention policy are enabled in your deployment.';
+      }
+      if (q.includes('bulk') || q.includes('send') || q.includes('sms')) {
+        return 'Use Bulk Sending in the subscriber portal to queue multiple recipients. You can combine email and SMS notifications, set reminders, and monitor completion status from dashboard views.';
+      }
+      if (q.includes('ai') || q.includes('template') || q.includes('document generation')) {
+        return 'Two AI flows are available in-app:\n1) AI Agreement Assistant for risk/sanity review of agreement text.\n2) AI Document / Template Generation to draft a starter template and add it to your template library.';
+      }
+      return 'SignProz includes Document Workspace, eSignature fields, affiliate rewards, integrations, API access, and AI-assisted workflows. Ask me about pricing, compliance, templates, or sending flows.';
+    }
+
+    function renderAiFaqMessages() {
+      const wrap = document.getElementById('aiFaqMessages');
+      if (!wrap) return;
+      wrap.innerHTML = aiFaqHistory.map(m => `<div class="${m.role === 'user' ? 'faq-msg-user' : 'faq-msg-bot'}">${escapeHtml(m.text)}</div>`).join('');
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+
+    function submitAiFaqQuestion(rawText) {
+      const q = String(rawText || '').trim();
+      if (!q) return;
+      aiFaqHistory.push({ role: 'user', text: q });
+      aiFaqHistory.push({ role: 'bot', text: answerAiFaqQuestion(q) });
+      renderAiFaqMessages();
+      const input = document.getElementById('aiFaqInput');
+      if (input) input.value = '';
+    }
+
+    function openAiTemplateModal() {
+      document.getElementById('aiTemplateModal')?.classList.remove('hidden');
+      document.getElementById('aiTemplatePromptInput')?.focus();
+      const applyBtn = document.getElementById('aiTemplateApplyBtn');
+      if (applyBtn) applyBtn.disabled = !aiGeneratedTemplateDraft;
+    }
+
+    function closeAiTemplateModal() {
+      document.getElementById('aiTemplateModal')?.classList.add('hidden');
+      const st = document.getElementById('aiTemplateStatus');
+      if (st) st.textContent = '';
+    }
+
+    function buildGeneratedTemplateDraft(promptText) {
+      const p = String(promptText || '').trim();
+      const lower = p.toLowerCase();
+      const signerCount = /three|3/.test(lower) ? 3 : /four|4/.test(lower) ? 4 : 2;
+      const isNda = lower.includes('nda') || lower.includes('non-disclosure');
+      const isSales = lower.includes('sales') || lower.includes('proposal') || lower.includes('quote');
+      const isOffer = lower.includes('offer') || lower.includes('employment');
+      const baseName = isNda ? 'NDA' : isSales ? 'Sales Agreement' : isOffer ? 'Offer Letter' : 'Custom Agreement';
+      const name = 'AI - ' + baseName;
+      const fields = [
+        { leftPercent: 35, topPercent: 72 },
+        { leftPercent: 65, topPercent: 72 },
+        { leftPercent: 35, topPercent: 82 },
+        { leftPercent: 65, topPercent: 82 }
+      ].slice(0, Math.max(1, signerCount));
+      const checklist = [
+        'Purpose and scope',
+        'Commercial terms and payment',
+        'Term and termination',
+        'Confidentiality / data handling',
+        'Signature blocks'
+      ];
+      const summary = `Generated template: ${name}. Suggested signers: ${signerCount}.`;
+      const body = `This AI-generated starter includes sections for:\n- ${checklist.join('\n- ')}\n\nPrompt: ${p}`;
+      return { id: genId(), name, signerCount, fields, summary, body };
+    }
+
+    function runAiTemplateGeneration() {
+      const input = document.getElementById('aiTemplatePromptInput');
+      const output = document.getElementById('aiTemplateOutput');
+      const status = document.getElementById('aiTemplateStatus');
+      if (!input || !output) return;
+      const promptText = input.value.trim();
+      if (!promptText) {
+        output.innerHTML = '<p class="text-amber-700 text-sm">Describe the document/template you want first.</p>';
+        return;
+      }
+      aiGeneratedTemplateDraft = buildGeneratedTemplateDraft(promptText);
+      output.innerHTML = `<p><strong>${escapeHtml(aiGeneratedTemplateDraft.summary)}</strong></p>
+        <h4>Draft details</h4>
+        <ul>
+          <li>Template name: <strong>${escapeHtml(aiGeneratedTemplateDraft.name)}</strong></li>
+          <li>Recommended signers: <strong>${aiGeneratedTemplateDraft.signerCount}</strong></li>
+          <li>Signature field presets: <strong>${aiGeneratedTemplateDraft.fields.length}</strong></li>
+        </ul>
+        <h4>Suggested section checklist</h4>
+        <p>${escapeHtml(aiGeneratedTemplateDraft.body).replace(/\n/g, '<br>')}</p>`;
+      const applyBtn = document.getElementById('aiTemplateApplyBtn');
+      if (applyBtn) applyBtn.disabled = false;
+      if (status) status.textContent = 'Draft generated. Click "Create template" to add it.';
+    }
+
+    function applyAiTemplateDraft() {
+      if (!aiGeneratedTemplateDraft) return;
+      templates.unshift({
+        id: aiGeneratedTemplateDraft.id,
+        name: aiGeneratedTemplateDraft.name,
+        fields: aiGeneratedTemplateDraft.fields,
+        signerCount: aiGeneratedTemplateDraft.signerCount
+      });
+      addAudit('🤖 AI template created: ' + aiGeneratedTemplateDraft.name);
+      dashboardMainTab = 'workspace';
+      closeAiTemplateModal();
+      alert('AI template created and added to your template library.');
+      renderApp();
+    }
+
     function initCanvasDrawing() {
       canvasEl = document.getElementById('signCanvas');
       if (!canvasEl) return;
@@ -1193,6 +1459,30 @@
         document.getElementById('aiAgreementRunBtn')?.addEventListener('click', () => { runAiAgreementAnalysis(); });
         aiAgreementModal.addEventListener('click', (e) => { if (e.target === aiAgreementModal) closeAiAgreementModal(); });
       }
+
+      const aiFaqModal = document.getElementById('aiFaqModal');
+      if (aiFaqModal && !aiFaqModal.hasListener) {
+        aiFaqModal.hasListener = true;
+        document.getElementById('closeAiFaqModalBtn')?.addEventListener('click', closeAiFaqModal);
+        document.getElementById('aiFaqSendBtn')?.addEventListener('click', () => submitAiFaqQuestion(document.getElementById('aiFaqInput')?.value));
+        document.getElementById('aiFaqInput')?.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitAiFaqQuestion(e.target.value);
+          }
+        });
+        aiFaqModal.querySelectorAll('.faq-quick-btn').forEach((btn) => btn.addEventListener('click', () => submitAiFaqQuestion(btn.getAttribute('data-faq-q'))));
+        aiFaqModal.addEventListener('click', (e) => { if (e.target === aiFaqModal) closeAiFaqModal(); });
+      }
+
+      const aiTemplateModal = document.getElementById('aiTemplateModal');
+      if (aiTemplateModal && !aiTemplateModal.hasListener) {
+        aiTemplateModal.hasListener = true;
+        document.getElementById('closeAiTemplateModalBtn')?.addEventListener('click', closeAiTemplateModal);
+        document.getElementById('aiTemplateRunBtn')?.addEventListener('click', runAiTemplateGeneration);
+        document.getElementById('aiTemplateApplyBtn')?.addEventListener('click', applyAiTemplateDraft);
+        aiTemplateModal.addEventListener('click', (e) => { if (e.target === aiTemplateModal) closeAiTemplateModal(); });
+      }
     }
 
     function renderHeader() {
@@ -1207,8 +1497,65 @@
       return `<article class="max-w-3xl mx-auto px-4 py-10 sm:py-14 text-left"><button type="button" data-nav="home" class="text-sm font-medium text-blue-600 hover:text-blue-800 mb-6">← Back to home</button><h1 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">${title}</h1><p class="text-sm text-gray-500 mt-2">Last updated: April 22, 2026</p><div class="mt-8 space-y-5 text-gray-700 text-sm sm:text-base leading-relaxed">${bodyHtml}</div></article>`;
     }
 
-    function renderHomePage() { 
-      return `<div class="max-w-6xl mx-auto px-4 py-12"><div class="text-center"><h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1><p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">Join the SignProz Affiliate Program and earn 20-30% recurring commission on every referral.</p><div class="mt-8 flex flex-wrap gap-4 justify-center"><button type="button" data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button><button type="button" data-nav="affiliate" class="border border-gray-300 px-6 py-3 rounded-xl font-medium hover:border-blue-300 hover:text-blue-700">View Program Details</button><button type="button" data-nav="demo" class="text-blue-600 border border-blue-200 bg-blue-50 px-6 py-3 rounded-xl font-medium hover:bg-blue-100">Product demo</button></div><div class="mt-16 grid md:grid-cols-3 gap-6"><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div><div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$40k+ in 3 Years</h3><p>Illustrative part-time affiliate projection (36 / 84 / 144 new referrals by year).</p></div></div></div></div>`;
+    function renderHomePage() {
+      const keyFeatures = [
+        'Document Workspace',
+        'Recurring Affiliate Rewards (20-30%)',
+        'Custom Branding',
+        'Signing Links',
+        'HIPAA Compliance',
+        '400+ Integrations',
+        'AI-Assisted Agreements',
+        'SMS Delivery',
+        'Native PDF Editing',
+        'Microsoft 365 Integration',
+        'Mobile App',
+        'Sales CRM Integration',
+        'Interactive Pricing Tables',
+        'Payments',
+        'Bulk Sending',
+        'Workflow Automation',
+        'Affordable API'
+      ];
+      return `<div class="max-w-6xl mx-auto px-4 py-12">
+        <div class="text-center">
+          <h1 class="text-5xl font-extrabold bg-gradient-to-r from-blue-800 to-indigo-600 bg-clip-text text-transparent">Sign. Send. Earn.</h1>
+          <p class="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">SignProz combines digital agreements, flexible signing workflows, and recurring affiliate growth tools.</p>
+          <div class="mt-8 flex flex-wrap gap-4 justify-center">
+            <button type="button" data-nav="signup" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg">Start Earning →</button>
+            <button type="button" data-nav="affiliate" class="border border-gray-300 px-6 py-3 rounded-xl font-medium hover:border-blue-300 hover:text-blue-700">View Program Details</button>
+            <button type="button" data-nav="demo" class="text-blue-600 border border-blue-200 bg-blue-50 px-6 py-3 rounded-xl font-medium hover:bg-blue-100">Product demo</button>
+            <button type="button" id="openAiFaqFromHomeBtn" class="bg-indigo-100 border border-indigo-200 text-indigo-800 px-6 py-3 rounded-xl font-medium hover:bg-indigo-200">AI FAQ Chat</button>
+          </div>
+          <div class="mt-16 grid md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-line text-green-500 text-2xl"></i><h3 class="font-bold mt-3">20-30% Recurring</h3><p>Lifetime commissions on every referral.</p></div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-trophy text-yellow-500 text-2xl"></i><h3 class="font-bold mt-3">Tier Up to 30%</h3><p>Reach Platinum tier for maximum earnings.</p></div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm"><i class="fas fa-chart-simple text-blue-500 text-2xl"></i><h3 class="font-bold mt-3">$40k+ in 3 Years</h3><p>Illustrative part-time affiliate projection (36 / 84 / 144 new referrals by year).</p></div>
+          </div>
+        </div>
+
+        <section class="mt-14 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <h2 class="text-xl font-bold text-slate-900"><i class="fas fa-layer-group text-indigo-600 mr-2"></i>Key Features</h2>
+            <span class="text-xs text-slate-500">Core capabilities available in SignProz</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${keyFeatures.map((f) => `<span class="feature-pill"><i class="fas fa-check-circle text-blue-500"></i>${escapeHtml(f)}</span>`).join('')}
+          </div>
+        </section>
+
+        <section class="mt-10 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-wrap justify-between gap-4 items-start">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 mb-1"><i class="fas fa-robot text-indigo-600 mr-2"></i>AI Assisted Chatbot FAQ</h3>
+              <p class="text-sm text-slate-600 max-w-2xl">Get quick answers about integrations, compliance, API usage, pricing, and signing workflows.</p>
+            </div>
+            <button type="button" id="openAiFaqFromFeatureBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">Open AI FAQ</button>
+          </div>
+        </section>
+
+        <button type="button" id="openAiFaqBubbleBtn" class="home-faq-bubble"><i class="fas fa-comment-dots mr-1"></i>AI FAQ</button>
+      </div>`;
     }
 
     function renderAffiliatePage() {
@@ -1721,6 +2068,7 @@
             <button type="button" id="resetDocumentBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Clear Fields</button>
             <button type="button" id="sendDocBtn" class="btn-primary text-white px-4 py-1 rounded-full text-sm">Finalize Document</button>
             <button type="button" id="openAiAgreementFromWorkspaceBtn" class="bg-violet-100 text-violet-800 border border-violet-200 px-3 py-1 rounded-full text-sm font-medium hover:bg-violet-200"><i class="fas fa-magic mr-1" aria-hidden="true"></i> AI agreement review</button>
+            <button type="button" id="openAiTemplateFromWorkspaceBtn" class="bg-teal-100 text-teal-800 border border-teal-200 px-3 py-1 rounded-full text-sm font-medium hover:bg-teal-200"><i class="fas fa-file-circle-plus mr-1" aria-hidden="true"></i> AI generate template</button>
           </div>
           <div id="documentPreview" class="relative min-h-[300px] p-6 bg-gray-50 rounded-xl border" style="background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);">
             <div class="prose max-w-none text-sm pointer-events-none"><p class="text-center text-gray-400">Drag tiles from <strong>Sign &amp; Edit</strong> / <strong>Add fields</strong>, or turn on <strong>Add Signature Field</strong> and click the page.</p></div>
@@ -1876,6 +2224,7 @@
       document.getElementById('dashSidebarTeamBtn')?.addEventListener('click', () => alert('Demo: Team — shared workspaces, roles, and SSO appear here in the full product.'));
       document.getElementById('dashSidebarAiBtn')?.addEventListener('click', () => openAiAgreementModal());
       document.getElementById('openAiAgreementFromWorkspaceBtn')?.addEventListener('click', () => openAiAgreementModal());
+      document.getElementById('openAiTemplateFromWorkspaceBtn')?.addEventListener('click', () => openAiTemplateModal());
 
       const signerSel = document.getElementById('signer-dropdown');
       if (signerSel) {
@@ -1937,6 +2286,9 @@
     function attachGlobalEvents() {
       document.querySelectorAll('.nav-link, [data-nav]').forEach(el => { if(!el.hasListener) { el.addEventListener('click', (e) => { const page = el.getAttribute('data-nav'); if(page) setActivePage(page); }); el.hasListener=true; } });
       document.querySelectorAll('.use-template-btn').forEach(el => { if(!el.hasListener) { el.addEventListener('click', (e) => { const tid = el.getAttribute('data-id'); if(tid && currentUser) { loadTemplate(tid); setActivePage('dashboard'); } else if(tid && !currentUser) alert('Please sign in first'); }); el.hasListener=true; } });
+      document.getElementById('openAiFaqFromHomeBtn')?.addEventListener('click', () => openAiFaqModal());
+      document.getElementById('openAiFaqFromFeatureBtn')?.addEventListener('click', () => openAiFaqModal());
+      document.getElementById('openAiFaqBubbleBtn')?.addEventListener('click', () => openAiFaqModal());
       
       const logout = document.getElementById('logoutBtn'); if(logout && !logout.hasListener) { logout.addEventListener('click', handleLogout); logout.hasListener=true; }
       const loginBtn = document.getElementById('doLoginBtn'); if(loginBtn) loginBtn.onclick = () => { const email = document.getElementById('loginEmail')?.value; if(email) handleLogin(email); };
