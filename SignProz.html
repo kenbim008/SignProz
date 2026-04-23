@@ -164,11 +164,11 @@
     /* Subscriber portal — prepare document: sign & field palette */
     .signproz-editor-sidebar {
       width: 100%;
-      max-width: 260px;
+      max-width: 280px;
       flex-shrink: 0;
-      background-color: #f8f9fa;
+      background-color: #ffffff;
       border-right: 1px solid #e5e7eb;
-      padding: 14px 12px;
+      padding: 0 0 14px;
       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     }
     @media (max-width: 1023px) {
@@ -189,52 +189,92 @@
         overflow-y: auto;
       }
     }
+    .signproz-editor-sidebar .editor-section-head {
+      padding: 12px 14px 8px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fafafa;
+    }
     .signproz-editor-sidebar .sidebar-section h3 {
       font-size: 11px;
       color: #64748b;
       margin: 0 0 10px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
+    }
+    .signproz-editor-sidebar .sidebar-section.pad-x {
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 10px;
+    }
+    .signproz-editor-sidebar .pal-icon-box {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .signproz-editor-sidebar .drag-item.field-item .pal-icon-box {
+      background: #e0f2fe;
+      border-color: #bae6fd;
+      color: #0369a1;
     }
     .signproz-editor-sidebar .drag-item {
       display: flex;
       align-items: center;
-      padding: 9px 10px;
-      margin-bottom: 6px;
-      background: #fff;
+      gap: 10px;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      background: transparent;
       border: 1px solid transparent;
       border-radius: 6px;
       cursor: grab;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
       color: #334155;
       font-size: 13px;
     }
     .signproz-editor-sidebar .drag-item:hover {
-      border-color: #2563eb;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
     }
     .signproz-editor-sidebar .drag-item:active { cursor: grabbing; }
-    .signproz-editor-sidebar .drag-item .icon {
-      width: 28px;
-      font-size: 16px;
-      display: flex;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .signproz-editor-sidebar .drag-item .label { margin-left: 8px; }
+    .signproz-editor-sidebar .drag-item .label { flex: 1; min-width: 0; line-height: 1.25; }
     .signproz-editor-sidebar .separator {
       border: 0;
       border-top: 1px solid #e2e8f0;
-      margin: 14px 0;
+      margin: 0;
     }
-    .signproz-editor-sidebar .signer-selector { margin-bottom: 12px; }
-    .signproz-editor-sidebar #signer-dropdown {
-      width: 100%;
-      padding: 7px 8px;
+    .signproz-editor-sidebar .signer-selector { margin-bottom: 10px; }
+    .signproz-editor-sidebar .signer-dropdown-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      font-size: 13px;
+      padding: 6px 8px;
       background: #fff;
+    }
+    .signproz-editor-sidebar .signer-dropdown-wrap .signer-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #60a5fa;
+      flex-shrink: 0;
+    }
+    .signproz-editor-sidebar #signer-dropdown {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      padding: 4px 2px;
+      font-size: 13px;
+      background: transparent;
+      outline: none;
     }
     .signproz-editor-sidebar .edit-link {
       display: inline-block;
@@ -248,7 +288,13 @@
       padding: 0;
     }
     .signproz-editor-sidebar .edit-link:hover { text-decoration: underline; }
-    .signproz-editor-sidebar .field-item { border-left: 3px solid #3b82f6; }
+    .signproz-editor-sidebar .field-item { border-left: 3px solid #38bdf8; margin-left: 2px; }
+    .signproz-editor-sidebar .add-fields-block {
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+      padding-bottom: 4px;
+      margin-top: 2px;
+    }
     #documentPreview.document-drop-target { outline: 2px dashed #93c5fd; outline-offset: 2px; }
 
     .dashboard-subscriber-shell {
@@ -684,7 +730,11 @@
       }
     }
 
-    const PALETTE_DRAG_TYPES = new Set(['signature', 'sig-field', 'initials', 'text', 'text-field', 'date', 'checkbox', 'checkbox-field', 'checkmark']);
+    const PALETTE_DRAG_TYPES = new Set([
+      'signature', 'sig-field', 'initials', 'initials-field', 'text', 'text-field', 'date', 'date-signed-field',
+      'checkbox', 'checkbox-field', 'checkmark', 'radio', 'radio-field', 'dropdown', 'dropdown-field',
+      'attachment', 'attachment-field', 'name', 'name-field', 'email', 'email-field', 'company', 'company-field', 'title', 'title-field'
+    ]);
 
     function isPaletteDragPayload(raw) {
       return PALETTE_DRAG_TYPES.has(String(raw || '').trim().toLowerCase());
@@ -693,20 +743,34 @@
     function normalizePaletteKind(raw) {
       const k = String(raw || '').toLowerCase();
       if (k === 'sig-field' || k === 'signature') return 'signature';
-      if (k === 'initials') return 'initials';
+      if (k === 'initials-field' || k === 'initials') return 'initials';
       if (k === 'text-field' || k === 'text') return 'text';
-      if (k === 'date') return 'date';
+      if (k === 'date-signed-field' || k === 'date') return 'date';
       if (k === 'checkbox-field' || k === 'checkbox') return 'checkbox';
       if (k === 'checkmark') return 'checkmark';
+      if (k === 'radio-field' || k === 'radio') return 'radio';
+      if (k === 'dropdown-field' || k === 'dropdown') return 'dropdown';
+      if (k === 'attachment-field' || k === 'attachment') return 'attachment';
+      if (k === 'name-field' || k === 'name') return 'name';
+      if (k === 'email-field' || k === 'email') return 'email';
+      if (k === 'company-field' || k === 'company') return 'company';
+      if (k === 'title-field' || k === 'title') return 'title';
       return 'signature';
     }
+
+    const ASSIGN_VALUE_KINDS = ['text', 'name', 'email', 'company', 'title'];
 
     function fieldIsCompleteForSend(field) {
       const kind = field.kind || 'signature';
       if (kind === 'date') return !!field.signedData;
-      if (kind === 'text') return !!(field.signedData && field.signedData.type === 'text' && String(field.signedData.value || '').trim());
+      if (ASSIGN_VALUE_KINDS.includes(kind)) {
+        return !!(field.signedData && field.signedData.type === kind && String(field.signedData.value || '').trim());
+      }
       if (kind === 'checkbox') return !!(field.signedData && field.signedData.type === 'checkbox' && field.signedData.checked);
       if (kind === 'checkmark') return !!(field.signedData && field.signedData.type === 'check' && field.signedData.done);
+      if (kind === 'radio') return !!(field.signedData && field.signedData.type === 'radio' && field.signedData.choice);
+      if (kind === 'dropdown') return !!(field.signedData && field.signedData.type === 'dropdown' && String(field.signedData.value || '').trim());
+      if (kind === 'attachment') return !!(field.signedData && field.signedData.type === 'attachment' && String(field.signedData.fileName || '').trim());
       if (kind === 'signature' || kind === 'initials') return !!field.signedData;
       return !!field.signedData;
     }
@@ -726,6 +790,8 @@
         newField = { ...base, signedData: { type: 'date', value: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) } };
       } else if (kind === 'checkbox') {
         newField = { ...base, signedData: { type: 'checkbox', checked: false } };
+      } else if (kind === 'radio') {
+        newField = { ...base, signedData: { type: 'radio', choice: null } };
       } else {
         newField = { ...base, signedData: null };
       }
@@ -753,19 +819,23 @@
         fieldDiv.style.left = `${field.leftPercent}%`;
         fieldDiv.style.top = `${field.topPercent}%`;
         fieldDiv.style.transform = 'translate(-50%, -50%)';
-        if (kind === 'text') fieldDiv.style.minWidth = '100px';
+        if (ASSIGN_VALUE_KINDS.includes(kind) || kind === 'dropdown' || kind === 'attachment') fieldDiv.style.minWidth = '112px';
+        else if (kind === 'radio') fieldDiv.style.minWidth = '104px';
         else if (kind === 'checkbox' || kind === 'checkmark') fieldDiv.style.minWidth = '72px';
         else fieldDiv.style.minWidth = '130px';
 
         let contentHtml = '';
         let extraControls = '';
+        const assignTitles = { text: 'Text', name: 'Name', email: 'Email', company: 'Company', title: 'Title' };
 
-        if (kind === 'text') {
-          const val = field.signedData && field.signedData.type === 'text' ? escapeHtml(field.signedData.value) : '';
+        if (ASSIGN_VALUE_KINDS.includes(kind)) {
+          const hasVal = field.signedData && field.signedData.type === kind && String(field.signedData.value || '').trim();
+          const val = hasVal ? escapeHtml(field.signedData.value) : '';
+          const lab = assignTitles[kind] || 'Field';
           contentHtml = val
-            ? `<div class="text-xs text-green-700 font-semibold">Text</div><div class="text-[11px] px-1">${val}</div>`
-            : `<div class="text-xs font-semibold text-amber-700">Text field</div><div class="text-[10px] text-gray-500">Click to fill</div>`;
-          extraControls = !val ? `<button type="button" class="fill-text-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}" title="Fill"><i class="fas fa-edit"></i></button>` : '';
+            ? `<div class="text-xs text-green-700 font-semibold">${escapeHtml(lab)}</div><div class="text-[11px] px-1 break-words">${val}</div>`
+            : `<div class="text-xs font-semibold text-amber-700">${escapeHtml(lab)}</div><div class="text-[10px] text-gray-500">Click pencil to fill</div>`;
+          extraControls = !val ? `<button type="button" class="fill-assign-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}" title="Fill"><i class="fas fa-edit"></i></button>` : '';
         } else if (kind === 'date' && field.signedData && field.signedData.type === 'date') {
           contentHtml = `<div class="text-[10px] text-gray-500">Date signed</div><div class="text-xs font-semibold text-slate-800">${escapeHtml(field.signedData.value)}</div>`;
         } else if (kind === 'checkbox') {
@@ -774,6 +844,23 @@
         } else if (kind === 'checkmark') {
           const done = !!(field.signedData && field.signedData.done);
           contentHtml = `<div class="text-[10px] text-gray-500">Acknowledge</div><button type="button" class="toggle-checkmark-field text-2xl leading-none" data-id="${field.id}">${done ? '✅' : '⬜'}</button>`;
+        } else if (kind === 'radio') {
+          const ch = field.signedData && field.signedData.type === 'radio' ? field.signedData.choice : null;
+          const btnLabel = !ch ? 'Tap to choose' : ch === 'A' ? 'Option A ✓' : 'Option B ✓';
+          contentHtml = `<div class="text-[10px] text-gray-500">Radio buttons</div><button type="button" class="toggle-radio-field w-full max-w-[120px] border border-dashed border-blue-300 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-800 hover:bg-blue-50" data-id="${field.id}">${escapeHtml(btnLabel)}</button>`;
+        } else if (kind === 'dropdown') {
+          const hasVal = field.signedData && field.signedData.type === 'dropdown' && String(field.signedData.value || '').trim();
+          const val = hasVal ? escapeHtml(field.signedData.value) : '';
+          contentHtml = val
+            ? `<div class="text-xs text-green-700 font-semibold">Dropdown</div><div class="text-[11px]">${val}</div>`
+            : `<div class="text-xs font-semibold text-amber-700">Dropdown</div><div class="text-[10px] text-gray-500">Choose a value</div>`;
+          extraControls = !val ? `<button type="button" class="fill-dropdown-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}" title="Set value"><i class="fas fa-list"></i></button>` : '';
+        } else if (kind === 'attachment') {
+          const fn = field.signedData && field.signedData.type === 'attachment' ? field.signedData.fileName : '';
+          contentHtml = fn
+            ? `<div class="text-xs text-green-700 font-semibold">Attachment</div><div class="text-[10px] truncate max-w-[120px]">${escapeHtml(fn)}</div>`
+            : `<div class="text-xs font-semibold text-amber-700">Attachment</div><div class="text-[10px] text-gray-500">Add file</div>`;
+          extraControls = !fn ? `<button type="button" class="attach-field-btn text-blue-600 hover:bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center" data-id="${field.id}" title="Attach"><i class="fas fa-paperclip"></i></button>` : '';
         } else {
           const isSigned = !!(field.signedData && (field.signedData.type === 'typed' || field.signedData.type === 'draw'));
           if (isSigned) {
@@ -791,17 +878,52 @@
       });
       document.querySelectorAll('.sign-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); openSignatureModal(btn.getAttribute('data-id')); }));
       document.querySelectorAll('.delete-field-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteFieldById(btn.getAttribute('data-id')); }));
-      document.querySelectorAll('.fill-text-field-btn').forEach(btn => btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.fill-assign-field-btn').forEach(btn => btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
         const f = signatureFields.find(x => x.id === id);
-        if (!f) return;
-        const v = prompt('Text for this field:', (f.signedData && f.signedData.value) || '');
+        if (!f || !ASSIGN_VALUE_KINDS.includes(f.kind)) return;
+        const prompts = { text: 'Text for this field', name: 'Full name', email: 'Email address', company: 'Company name', title: 'Job title' };
+        const prev = (f.signedData && f.signedData.value) || '';
+        const v = prompt((prompts[f.kind] || 'Value') + ':', prev);
         if (v === null) return;
         const t = v.trim();
-        if (!t) { alert('Enter some text for this field.'); return; }
-        f.signedData = { type: 'text', value: t };
-        addAudit('✏️ Updated text field');
+        if (!t) { alert('Enter a value for this field.'); return; }
+        f.signedData = { type: f.kind, value: t };
+        addAudit('✏️ Updated ' + f.kind + ' field');
+        renderDashboardContent();
+        checkDocumentCompletion();
+      }));
+      document.querySelectorAll('.fill-dropdown-field-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const f = signatureFields.find(x => x.id === id);
+        if (!f || f.kind !== 'dropdown') return;
+        const v = prompt('Dropdown value:', (f.signedData && f.signedData.value) || '');
+        if (v === null) return;
+        const t = v.trim();
+        if (!t) { alert('Enter a dropdown option.'); return; }
+        f.signedData = { type: 'dropdown', value: t };
+        renderDashboardContent();
+        checkDocumentCompletion();
+      }));
+      document.querySelectorAll('.attach-field-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const f = signatureFields.find(x => x.id === id);
+        if (!f || f.kind !== 'attachment') return;
+        f.signedData = { type: 'attachment', fileName: 'attachment-' + String(f.id).slice(-6) + '.pdf' };
+        addAudit('📎 Attachment linked (preview)');
+        renderDashboardContent();
+        checkDocumentCompletion();
+      }));
+      document.querySelectorAll('.toggle-radio-field').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const f = signatureFields.find(x => x.id === id);
+        if (!f || !f.signedData || f.signedData.type !== 'radio') return;
+        const cur = f.signedData.choice;
+        f.signedData.choice = cur == null ? 'A' : cur === 'A' ? 'B' : 'A';
         renderDashboardContent();
         checkDocumentCompletion();
       }));
@@ -937,7 +1059,7 @@
     }
 
     function renderHeader() {
-      return `<header class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-30"><div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3"><div class="flex items-center gap-2 flex-wrap"><div class="flex items-center gap-2 cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('navigate', {detail:'home'}))"><div class="bg-gradient-to-r from-blue-600 to-indigo-700 w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-file-signature text-white text-lg"></i></div><span class="font-bold text-xl tracking-tight"><span class="text-blue-600">Sign</span><span class="text-indigo-600">Proz</span></span></div><button type="button" data-nav="affiliate" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full hover:bg-green-200 font-medium">Affiliate Program</button></div><div class="flex items-center gap-3 flex-wrap"><button type="button" data-nav="home" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Home</button><button type="button" data-nav="pricing" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Pricing</button><button type="button" data-nav="templates" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Templates</button><button type="button" data-nav="demo" class="nav-link text-blue-600 hover:text-blue-800 text-sm font-medium">Demo</button>${currentUser ? `<span class="text-sm bg-blue-50 px-3 py-1 rounded-full"><i class="fas fa-user"></i> ${currentUser.email.split('@')[0]}</span><button type="button" id="logoutBtn" class="text-sm bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"><i class="fas fa-sign-out-alt"></i> Logout</button><button type="button" data-nav="dashboard" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">📄 Dashboard</button>` : `<button type="button" data-nav="login" class="text-gray-700 text-sm font-medium">Sign In</button><button type="button" data-nav="signup" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">Start Free</button>`}</div></div></header>`;
+      return `<header class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-30"><div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3"><div class="flex items-center gap-2 flex-wrap"><div class="flex items-center gap-2 cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('navigate', {detail:'home'}))"><div class="bg-gradient-to-r from-blue-600 to-indigo-700 w-9 h-9 rounded-xl flex items-center justify-center shadow"><i class="fas fa-file-signature text-white text-lg"></i></div><span class="font-bold text-xl tracking-tight"><span class="text-blue-600">Sign</span><span class="text-indigo-600">Proz</span></span></div><button type="button" data-nav="affiliate" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full hover:bg-green-200 font-medium">Affiliate Program</button></div><div class="flex items-center gap-3 flex-wrap"><button type="button" data-nav="home" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Home</button><button type="button" data-nav="pricing" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Pricing</button><button type="button" data-nav="templates" class="nav-link text-gray-600 hover:text-blue-600 text-sm font-medium">Templates</button>${currentUser ? `<span class="text-sm bg-blue-50 px-3 py-1 rounded-full"><i class="fas fa-user"></i> ${currentUser.email.split('@')[0]}</span><button type="button" id="logoutBtn" class="text-sm bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"><i class="fas fa-sign-out-alt"></i> Logout</button><button type="button" data-nav="dashboard" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">📄 Dashboard</button>` : `<button type="button" data-nav="login" class="text-gray-700 text-sm font-medium">Sign In</button><button type="button" data-nav="signup" class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm shadow">Start Free</button>`}</div></div></header>`;
     }
 
     function renderFooter() {
@@ -1268,29 +1390,50 @@
       if (!signers.length) dashboardActiveSignerId = null;
       else if (!dashboardActiveSignerId || !signers.some(s => s.id === dashboardActiveSignerId)) dashboardActiveSignerId = signers[0].id;
       const dashSignerId = dashboardActiveSignerId;
-      const opts = signers.map((s, i) => `<option value="${s.id}"${s.id === dashSignerId ? ' selected' : ''}>Signer ${i + 1} — ${escapeHtml(s.name)}</option>`).join('');
+      const opts = signers.map((s, i) => {
+        const short = s.name.length > 22 ? escapeHtml(s.name.slice(0, 20)) + '…' : escapeHtml(s.name);
+        return `<option value="${s.id}"${s.id === dashSignerId ? ' selected' : ''}>Signer ${i + 1} — ${short}</option>`;
+      }).join('');
+      const pal = (kind, iconClass, label, field) => `<div class="drag-item${field ? ' field-item' : ''}" draggable="true" data-palette-kind="${kind}"><span class="pal-icon-box" aria-hidden="true"><i class="fas ${iconClass}"></i></span><span class="label">${label}</span></div>`;
       return `<aside class="signproz-editor-sidebar" aria-label="Prepare document">
-        <div class="sidebar-section">
-          <h3>SIGN &amp; EDIT</h3>
-          <div class="drag-item" draggable="true" data-palette-kind="signature"><span class="icon" aria-hidden="true">✍️</span><span class="label">My Signature</span></div>
-          <div class="drag-item" draggable="true" data-palette-kind="initials"><span class="icon" aria-hidden="true">AB</span><span class="label">My Initials</span></div>
-          <div class="drag-item" draggable="true" data-palette-kind="text"><span class="icon" aria-hidden="true">T</span><span class="label">Text</span></div>
-          <div class="drag-item" draggable="true" data-palette-kind="date"><span class="icon" aria-hidden="true">📅</span><span class="label">Date Signed</span></div>
-          <div class="drag-item" draggable="true" data-palette-kind="checkmark"><span class="icon" aria-hidden="true">✔️</span><span class="label">Checkmark</span></div>
-        </div>
-        <hr class="separator" role="presentation">
-        <div class="sidebar-section">
-          <h3>ADD FIELDS</h3>
-          <div class="signer-selector">
-            <label for="signer-dropdown" class="sr-only">Assign fields to signer</label>
-            <select id="signer-dropdown" aria-label="Signer for new fields">${opts || '<option value="">— Add a signer —</option>'}</select>
-            <button type="button" id="dashEditSignersLink" class="edit-link">Edit signers</button>
+        <div class="editor-section-head">
+          <div class="sidebar-section pad-x" style="padding-top:10px">
+            <h3>SIGN &amp; EDIT</h3>
           </div>
-          <div class="drag-item field-item" draggable="true" data-palette-kind="sig-field"><span class="icon" aria-hidden="true">✍️</span><span class="label">Signature Field</span></div>
-          <div class="drag-item field-item" draggable="true" data-palette-kind="text-field"><span class="icon" aria-hidden="true">T</span><span class="label">Text Field</span></div>
-          <div class="drag-item field-item" draggable="true" data-palette-kind="checkbox-field"><span class="icon" aria-hidden="true">☑️</span><span class="label">Checkbox Field</span></div>
         </div>
-        <p class="text-[10px] text-slate-500 mt-3 leading-snug">Drag a tile onto the document workspace. Or use <strong>Add Signature Field</strong> and click the page.</p>
+        <div class="sidebar-section pad-x" style="padding-top:6px">
+          ${pal('signature', 'fa-signature', 'My Signature', false)}
+          ${pal('initials', 'fa-font', 'My Initials', false)}
+          ${pal('text', 'fa-i-cursor', 'Text', false)}
+          ${pal('date', 'fa-calendar-alt', 'Date Signed', false)}
+          ${pal('checkmark', 'fa-check-circle', 'Checkmark', false)}
+        </div>
+        <div class="add-fields-block">
+          <div class="sidebar-section pad-x" style="padding-top:0">
+            <h3 style="margin-bottom:10px">ADD FIELDS</h3>
+            <div class="signer-selector">
+              <label for="signer-dropdown" class="sr-only">Assign fields to signer</label>
+              <div class="signer-dropdown-wrap">
+                <span class="signer-dot" aria-hidden="true"></span>
+                <select id="signer-dropdown" aria-label="Signer for new fields">${opts || '<option value="">— Add a signer —</option>'}</select>
+              </div>
+              <button type="button" id="dashEditSignersLink" class="edit-link">Edit Signers</button>
+            </div>
+            ${pal('sig-field', 'fa-signature', 'Signature Field', true)}
+            ${pal('initials-field', 'fa-font', 'Initials Field', true)}
+            ${pal('text-field', 'fa-align-left', 'Text Field', true)}
+            ${pal('date-signed-field', 'fa-calendar-day', 'Date Signed Field', true)}
+            ${pal('checkbox-field', 'fa-check-square', 'Checkbox Field', true)}
+            ${pal('radio-field', 'fa-dot-circle', 'Radio Buttons', true)}
+            ${pal('dropdown-field', 'fa-caret-square-down', 'Dropdown Field', true)}
+            ${pal('attachment-field', 'fa-paperclip', 'Attachment Field', true)}
+            ${pal('name-field', 'fa-id-card', 'Name Field', true)}
+            ${pal('email-field', 'fa-envelope', 'Email Field', true)}
+            ${pal('company-field', 'fa-building', 'Company Field', true)}
+            ${pal('title-field', 'fa-briefcase', 'Title Field', true)}
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 px-3 py-3 leading-snug border-t border-slate-100">Drag any item onto the document. You can also use <strong>Add Signature Field</strong> and click the page.</p>
       </aside>`;
     }
 
