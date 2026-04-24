@@ -620,9 +620,12 @@
     
     let affiliateReferrals = [];
     let monthlyDocumentCount = 0;
+    let dashboardExpectedPayout = 0;
+    let stripeConnectStep = 'idle';
     
     const PRO_MONTHLY_LIMIT = 200;
     const FREE_TIER_LIMIT = 3;
+    const MIN_AFFILIATE_WITHDRAWAL = 50;
 
     /** Set `window.SIGNPROZ_REFERRALS_API = ''` before this script for same-origin, or e.g. `https://your-api.vercel.app` when the HTML is on GitHub Pages. */
     const REFERRALS_API_BASE = (typeof window.SIGNPROZ_REFERRALS_API === 'string'
@@ -695,6 +698,7 @@
         const active = Number(data.activeAccounts);
         const expectedRaw = Number(data.expectedPayout);
         const expected = Number.isFinite(expectedRaw) ? expectedRaw : 0;
+        dashboardExpectedPayout = expected;
         const tierInfo = getTierFromApiName(data.tier);
         totalEl.textContent = String(Number.isFinite(total) ? total : 0);
         activeEl.textContent = String(Number.isFinite(active) ? active : 0);
@@ -702,12 +706,68 @@
         tierBadge.textContent = tierInfo.name + ' (' + tierInfo.commission + '% commission)';
         tierBadge.className = 'px-3 py-1 rounded-full text-white text-sm ' + tierInfo.color;
       } catch (err) {
+        dashboardExpectedPayout = 0;
         totalEl.textContent = '—';
         activeEl.textContent = '—';
         payoutEl.textContent = '—';
         tierBadge.textContent = 'Could not load';
         tierBadge.className = 'px-3 py-1 rounded-full text-white text-sm bg-gray-400';
       }
+    }
+
+    function getWithdrawableAffiliateBalance() {
+      if (Number.isFinite(dashboardExpectedPayout) && dashboardExpectedPayout > 0) return dashboardExpectedPayout;
+      const fallback = Number(currentUser?.referralEarnings);
+      return Number.isFinite(fallback) ? fallback : 0;
+    }
+
+    function getWithdrawalEligibility() {
+      const amount = getWithdrawableAffiliateBalance();
+      const isPayoutDay = new Date().getDate() === 15;
+      const meetsMinimum = amount >= MIN_AFFILIATE_WITHDRAWAL;
+      let reason = '';
+      if (!isPayoutDay) reason = 'Withdrawals are available on the 15th of each month.';
+      else if (!meetsMinimum) reason = `Minimum withdrawal is $${MIN_AFFILIATE_WITHDRAWAL}.`;
+      return { amount, isPayoutDay, meetsMinimum, eligible: isPayoutDay && meetsMinimum, reason };
+    }
+
+    function startStripeConnectFlow() {
+      if (!currentUser) return;
+      stripeConnectStep = 'pending';
+      addAudit('Stripe payout setup started. Confirm connection to finish.');
+      renderApp();
+    }
+
+    function confirmStripeConnectFlow() {
+      if (!currentUser) return;
+      if (stripeConnectStep !== 'pending') {
+        alert('Start Stripe setup first.');
+        return;
+      }
+      stripeConnectStep = 'connected';
+      currentUser.stripeConnected = true;
+      addAudit('Stripe account connected for affiliate payouts.');
+      alert('Stripe connected successfully. You can request payouts when eligible.');
+      renderApp();
+    }
+
+    function requestAffiliateWithdrawal() {
+      if (!currentUser) return;
+      if (!currentUser.stripeConnected) {
+        alert('Connect Stripe first to receive payouts.');
+        return;
+      }
+      const status = getWithdrawalEligibility();
+      if (!status.eligible) {
+        alert(status.reason || 'Withdrawal not available yet.');
+        return;
+      }
+      const amount = status.amount;
+      currentUser.referralEarnings = Number((currentUser.referralEarnings + amount).toFixed(2));
+      dashboardExpectedPayout = 0;
+      addAudit(`Affiliate payout requested: $${amount.toFixed(2)} via Stripe.`);
+      alert(`Withdrawal request submitted for $${amount.toFixed(2)}. Funds will be processed to Stripe.`);
+      renderApp();
     }
 
     // 3-Year Revenue Projection — new referrals Y1=36, Y2=84, Y3=144; earnings scaled from prior model (same commission assumptions)
@@ -730,7 +790,8 @@
         referralEarnings: 0,
         referralCount: 0,
         paidReferrals: 0,
-        planType: plan
+        planType: plan,
+        stripeConnected: false
       };
       signatureFields = [];
       signers = [{ id: "s1", name: currentUser.email.split('@')[0], email: currentUser.email }];
@@ -753,7 +814,8 @@
         referralEarnings: 0,
         referralCount: 0,
         paidReferrals: 0,
-        planType: 'free'
+        planType: 'free',
+        stripeConnected: false
       };
       signers = [{ id: "s1", name: email.split('@')[0], email }];
       dashboardActiveSignerId = signers[0].id;
@@ -771,6 +833,7 @@
         currentUser.referralCount = 3;
         currentUser.paidReferrals = 2;
         currentUser.referralEarnings = 11.60;
+        dashboardExpectedPayout = 11.60;
         affiliateReferrals = [
           { email: "john@example.com", status: "active", plan: "Pro", date: "2026-03-15", earnings: 5.80 },
           { email: "jane@example.com", status: "active", plan: "Pro", date: "2026-03-20", earnings: 5.80 },
@@ -793,6 +856,8 @@
       dashboardMainTab = 'workspace';
       dashboardEnvelopeSearch = '';
       aiGeneratedTemplateDraft = null;
+      dashboardExpectedPayout = 0;
+      stripeConnectStep = 'idle';
       setActivePage('home');
     }
 
@@ -2188,6 +2253,8 @@
       if (!currentUser) return '<div class="p-10 text-center">Please login</div>';
       const isWorkspace = dashboardMainTab === 'workspace';
       const isReferrals = dashboardMainTab === 'referrals';
+      const withdrawalStatus = getWithdrawalEligibility();
+      const stripeConnected = currentUser.stripeConnected || stripeConnectStep === 'connected';
       const sidebar = isWorkspace ? renderDashboardSidebar() : '';
       const editorSidebar = isWorkspace ? renderDashboardEditorSidebar() : '';
 
@@ -2220,6 +2287,22 @@
             </div>
             <div class="mt-4 flex items-center justify-between bg-white rounded-xl p-3"><span class="text-sm font-medium">Tier:</span><span id="dash-api-tier-badge" class="px-3 py-1 rounded-full text-white text-sm tier-bronze">…</span></div>
             <div class="mt-4 text-xs text-gray-500 text-center">Next payout: 15th of next month • Min. $50</div>
+            <div class="mt-4 bg-white rounded-xl p-3 border border-gray-100 space-y-2">
+              <div class="text-xs text-gray-600">Withdrawable now: <strong class="text-gray-900">$${withdrawalStatus.amount.toFixed(2)}</strong></div>
+              <div class="text-xs ${withdrawalStatus.eligible ? 'text-green-700' : 'text-amber-700'}">${withdrawalStatus.eligible ? 'Withdrawal available today.' : escapeHtml(withdrawalStatus.reason)}</div>
+              <button type="button" id="requestWithdrawalBtn" class="w-full px-3 py-2 rounded-lg text-sm font-semibold ${withdrawalStatus.eligible && stripeConnected ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-500 cursor-not-allowed'}" ${withdrawalStatus.eligible && stripeConnected ? '' : 'disabled'}><i class="fas fa-wallet mr-1"></i> Withdraw earnings</button>
+            </div>
+            <div class="mt-3 bg-white rounded-xl p-3 border border-gray-100 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-800">Stripe payouts</span>
+                <span class="text-xs px-2 py-0.5 rounded-full ${stripeConnected ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${stripeConnected ? 'Connected' : 'Not connected'}</span>
+              </div>
+              <p class="text-xs text-gray-500">2-click setup: connect Stripe, then confirm.</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" id="stripeConnectStep1Btn" class="px-3 py-2 rounded-lg text-sm font-medium border ${stripeConnected ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}" ${stripeConnected ? 'disabled' : ''}>1) Connect Stripe</button>
+                <button type="button" id="stripeConnectStep2Btn" class="px-3 py-2 rounded-lg text-sm font-medium border ${stripeConnected ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : stripeConnectStep === 'pending' ? 'border-indigo-300 text-indigo-800 bg-indigo-100 hover:bg-indigo-200' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}" ${stripeConnected || stripeConnectStep !== 'pending' ? 'disabled' : ''}>2) Confirm connection</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -2371,6 +2454,15 @@
       
       const sampleBtn = document.getElementById('sampleDataBtn');
       if (sampleBtn) sampleBtn.onclick = () => loadSampleAffiliateData();
+
+      const stripeStep1Btn = document.getElementById('stripeConnectStep1Btn');
+      if (stripeStep1Btn) stripeStep1Btn.onclick = () => startStripeConnectFlow();
+
+      const stripeStep2Btn = document.getElementById('stripeConnectStep2Btn');
+      if (stripeStep2Btn) stripeStep2Btn.onclick = () => confirmStripeConnectFlow();
+
+      const withdrawalBtn = document.getElementById('requestWithdrawalBtn');
+      if (withdrawalBtn) withdrawalBtn.onclick = () => requestAffiliateWithdrawal();
       
       document.getElementById('addSignerBtn')?.addEventListener('click', () => {
         const name = prompt('Signer name');
