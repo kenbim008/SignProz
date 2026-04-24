@@ -1576,6 +1576,78 @@
 
         <section class="mt-10 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <h2 class="text-xl font-bold text-slate-900"><i class="fas fa-scale-balanced text-indigo-600 mr-2"></i>SignProz vs Popular eSignature Platforms</h2>
+            <span class="text-xs text-slate-500">Feature and pricing comparison (high-level)</span>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="w-full min-w-[860px] text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-slate-700">
+                  <th class="p-3 text-left font-semibold">Platform</th>
+                  <th class="p-3 text-left font-semibold">Entry pricing</th>
+                  <th class="p-3 text-left font-semibold">AI assistance</th>
+                  <th class="p-3 text-left font-semibold">Integrations</th>
+                  <th class="p-3 text-left font-semibold">API access</th>
+                  <th class="p-3 text-left font-semibold">Affiliate rewards</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr class="bg-blue-50/50">
+                  <td class="p-3 font-semibold text-blue-800">SignProz</td>
+                  <td class="p-3">$10/mo annual Pro ($20 monthly) · Premium $39.95/mo annual</td>
+                  <td class="p-3">Built-in AI agreement review + AI template generation</td>
+                  <td class="p-3">400+ + Microsoft 365 + CRM</td>
+                  <td class="p-3">Affordable API tiers</td>
+                  <td class="p-3 text-emerald-700 font-semibold">20-30% recurring</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-medium">DocuSign</td>
+                  <td class="p-3">Generally higher SMB entry plans</td>
+                  <td class="p-3">Available in selected plans/add-ons</td>
+                  <td class="p-3">Broad enterprise ecosystem</td>
+                  <td class="p-3">Yes</td>
+                  <td class="p-3">Not core positioning</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-medium">Dropbox Sign (HelloSign)</td>
+                  <td class="p-3">Mid-market monthly tiers</td>
+                  <td class="p-3">Limited AI-first positioning</td>
+                  <td class="p-3">Strong SMB integrations</td>
+                  <td class="p-3">Yes</td>
+                  <td class="p-3">Not standard</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-medium">Adobe Acrobat Sign</td>
+                  <td class="p-3">Enterprise-oriented pricing</td>
+                  <td class="p-3">Adobe AI capabilities in broader suite</td>
+                  <td class="p-3">Adobe + Microsoft ecosystem</td>
+                  <td class="p-3">Yes</td>
+                  <td class="p-3">Not standard</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-medium">PandaDoc</td>
+                  <td class="p-3">Document workflow focused tiers</td>
+                  <td class="p-3">Template/content automation features</td>
+                  <td class="p-3">Sales-focused integrations</td>
+                  <td class="p-3">Yes</td>
+                  <td class="p-3">Partner program varies</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-medium">SignNow</td>
+                  <td class="p-3">Competitive SMB pricing bands</td>
+                  <td class="p-3">Automation-centric, lighter AI focus</td>
+                  <td class="p-3">Business app connectors</td>
+                  <td class="p-3">Yes</td>
+                  <td class="p-3">Not core positioning</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-3">Note: competitor details are directional and can vary by edition, region, and contract terms.</p>
+        </section>
+
+        <section class="mt-10 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
             <h2 class="text-xl font-bold text-slate-900"><i class="fas fa-layer-group text-indigo-600 mr-2"></i>Key Features</h2>
             <span class="text-xs text-slate-500">Production-ready capabilities</span>
           </div>
@@ -1842,7 +1914,7 @@
           </div>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-6 mt-10 max-w-6xl mx-auto">
+        <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mt-10 max-w-7xl mx-auto">
           <div class="bg-white rounded-2xl shadow-md p-6 text-center pricing-card">
             <i class="fas fa-gift text-4xl text-blue-500"></i>
             <h3 class="text-2xl font-bold mt-2">Free</h3>
@@ -1895,25 +1967,25 @@
           </div>
         </div>
 
-        <div class="mt-8 max-w-4xl mx-auto bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl shadow-xl p-6 text-white">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h3 class="text-2xl font-bold mt-1">Enterprise</h3>
-              <p class="text-purple-200 text-sm mt-1">Advanced scale and compliance for larger teams.</p>
+          <div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl shadow-xl p-6 pricing-card text-white">
+            <div class="text-center">
+              <i class="fas fa-building text-4xl text-purple-300"></i>
+              <h3 class="text-2xl font-bold mt-2">Enterprise</h3>
+              <p class="text-3xl font-extrabold mt-2">$499 / month</p>
+              <p class="text-xs text-purple-200 mt-1">Advanced scale and compliance for larger teams</p>
             </div>
-            <p class="text-xl font-extrabold">$499 / month</p>
+            <button id="upgradeEnterprisePricingBtn" class="mt-5 w-full bg-white text-purple-900 py-2.5 rounded-xl font-semibold">Contact Sales</button>
+            <ul class="mt-4 space-y-2 text-sm text-purple-100">
+              <li>✓ Unlimited documents</li>
+              <li>✓ Unlimited senders and team roles</li>
+              <li>✓ SLA + SSO</li>
+              <li>✓ White-labeling & custom branding</li>
+              <li>✓ API and webhook support</li>
+              <li>✓ Priority onboarding and support</li>
+              <li>✓ Security controls and audit exports</li>
+              <li>✓ Dedicated account management</li>
+            </ul>
           </div>
-          <ul class="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-purple-100">
-            <li>✓ Unlimited documents</li>
-            <li>✓ Unlimited senders and team roles</li>
-            <li>✓ SLA + SSO</li>
-            <li>✓ White-labeling & custom branding</li>
-            <li>✓ API and webhook support</li>
-            <li>✓ Priority onboarding and support</li>
-            <li>✓ Security controls and audit exports</li>
-            <li>✓ Dedicated account management</li>
-          </ul>
-          <button id="upgradeEnterprisePricingBtn" class="mt-6 w-full sm:w-auto bg-white text-purple-900 px-6 py-2.5 rounded-xl font-semibold">Contact Sales</button>
         </div>
       </div>`;
     }
