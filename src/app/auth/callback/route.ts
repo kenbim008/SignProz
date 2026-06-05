@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(request: NextRequest) {
@@ -10,11 +9,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  const supabase = await createServerClient()
   const supabaseAdmin = createAdminClient()
 
-  // Look up token
-  const { data: tokenData, error } = await supabase
+  // Look up token (admin client bypasses RLS — callback is unauthenticated)
+  const { data: tokenData, error } = await supabaseAdmin
     .from('auth_tokens')
     .select('*')
     .eq('token', token)
@@ -53,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (userId) {
-      await supabase
+      await supabaseAdmin
         .from('auth_tokens')
         .update({ user_id: userId })
         .eq('token', token)
@@ -67,7 +65,7 @@ export async function GET(request: NextRequest) {
   console.log('[callback] User found:', { userId, email: tokenData.email })
 
   // Mark token as used
-  await supabase
+  await supabaseAdmin
     .from('auth_tokens')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token)

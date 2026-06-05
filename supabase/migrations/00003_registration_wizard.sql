@@ -30,6 +30,15 @@ CREATE POLICY "registration_sessions_owner_all" ON public.registration_sessions 
   USING (email = auth.jwt() ->> 'email')
   WITH CHECK (email = auth.jwt() ->> 'email');
 
+-- Create the updated_at function if it doesn't exist (referenced by other tables too)
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER registration_sessions_updated_at
   BEFORE UPDATE ON public.registration_sessions
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
