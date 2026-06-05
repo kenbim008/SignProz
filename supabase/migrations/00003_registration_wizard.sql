@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS public.registration_sessions (
   has_verified_email BOOLEAN NOT NULL DEFAULT false,
   has_verified_phone BOOLEAN NOT NULL DEFAULT false,
   referral_code TEXT,
+  email_otp TEXT,
+  email_otp_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -46,3 +48,7 @@ CREATE TRIGGER registration_sessions_updated_at
 -- Add phone column to profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 GRANT UPDATE (phone) ON TABLE public.profiles TO authenticated;
+
+-- Add OTP columns to registration_sessions (in case table already created)
+ALTER TABLE public.registration_sessions ADD COLUMN IF NOT EXISTS email_otp TEXT;
+ALTER TABLE public.registration_sessions ADD COLUMN IF NOT EXISTS email_otp_expires_at TIMESTAMPTZ;

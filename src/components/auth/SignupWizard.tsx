@@ -135,7 +135,7 @@ export default function SignupWizard() {
     }
   }, [fullName, phone])
 
-  // Step 3: Email OTP verification via Supabase client
+  // Step 3: Email OTP verification via custom API
   const handleVerifyEmail = useCallback(async (otp: string) => {
     setError('')
     if (otp.length !== 6) {
@@ -146,29 +146,16 @@ export default function SignupWizard() {
     setLoading(true)
 
     try {
-      const supabase = getBrowserClient()
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email',
-      })
-
-      if (verifyError) {
-        setError(verifyError.message === 'Token has expired or is invalid'
-          ? 'Code expired or invalid. Request a new one.'
-          : verifyError.message)
-        setLoading(false)
-        return
-      }
-
-      const res = await fetch('/api/auth/register/session', {
-        method: 'PUT',
+      const res = await fetch('/api/auth/register/verify-email', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hasVerifiedEmail: true }),
+        body: JSON.stringify({ otp }),
       })
+
+      const data = await res.json()
 
       if (!res.ok) {
-        setError('Failed to update session state.')
+        setError(data.error || 'Verification failed.')
         setLoading(false)
         return
       }
@@ -179,7 +166,7 @@ export default function SignupWizard() {
     } finally {
       setLoading(false)
     }
-  }, [email])
+  }, [])
 
   // Step 4a: Phone OTP — Send code via Supabase
   const handleSendPhoneOtp = useCallback(async () => {
@@ -287,27 +274,28 @@ export default function SignupWizard() {
     }
   }, [router])
 
-  // Resend email OTP
+  // Resend email OTP via custom API
   const handleResendEmailOtp = useCallback(async () => {
     setError('')
     setLoading(true)
 
     try {
-      const supabase = getBrowserClient()
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
+      const res = await fetch('/api/auth/register/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, referralCode: referralCode || undefined }),
       })
 
-      if (otpError) {
-        setError(otpError.message || 'Failed to resend code.')
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || 'Failed to resend code.')
       }
     } catch {
       setError('Something went wrong.')
     } finally {
       setLoading(false)
     }
-  }, [email])
+  }, [email, referralCode])
 
   // Use different email (reset to step 1)
   const handleChangeEmail = () => {
