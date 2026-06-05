@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createServerClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
@@ -43,18 +42,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Phone not verified' }, { status: 400 })
     }
 
-    // Get the authenticated user from Supabase session
-    const supabase = await createServerClient()
-    const { data: { session: authSession } } = await supabase.auth.getSession()
+    // Find the user by email (created during email verification via admin API)
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+    const authUser = users?.users.find((u: { email?: string }) => u.email === regSession.email)
 
-    if (!authSession?.user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json(
-        { error: 'Authentication required. Please verify your email first.' },
-        { status: 401 }
+        { error: 'User not found. Please complete email verification first.' },
+        { status: 404 }
       )
     }
 
-    const userId = authSession.user.id
+    const userId = authUser.id
 
     // Set password via admin API
     const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -121,6 +120,27 @@ export async function POST(request: Request) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 0,
+      path: '/',
+    })
+
+    // Set session cookie so user is auto-logged in
+    const sessionData = JSON.stringify({
+      access_token: '',
+      refresh_token: '',
+      expires_at: Date.now() + 3600000,
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: userId,
+        email: regSession.email,
+      },
+    })
+    const encodedSession = encodeURIComponent(sessionData)
+    response.cookies.set('sb-session', encodedSession, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 3600,
       path: '/',
     })
 

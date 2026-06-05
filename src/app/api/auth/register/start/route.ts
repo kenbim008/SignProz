@@ -58,11 +58,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to start registration' }, { status: 500 })
     }
 
-    // Send OTP via Resend
+    // Always log OTP for debugging (visible in dev server logs)
+    console.log(`[DEV] Registration OTP for ${email}: ${otp}`)
+
+    // Send OTP via Resend (non-blocking — don't fail registration if email fails)
     const resendApiKey = process.env.RESEND_API_KEY
     if (resendApiKey) {
       const resend = new Resend(resendApiKey)
-      const { error: emailError } = await resend.emails.send({
+      resend.emails.send({
         from: 'SignProz <noreply@signproz.com>',
         to: email,
         subject: 'Your SignProz verification code',
@@ -84,13 +87,7 @@ export async function POST(request: Request) {
   </p>
 </body>
 </html>`,
-      })
-
-      if (emailError) {
-        console.error('Resend error:', emailError)
-      }
-    } else {
-      console.log(`[DEV] Email OTP for ${email}: ${otp}`)
+      }).catch((e: unknown) => console.error('Resend error (non-blocking):', e))
     }
 
     // Set registration session cookie

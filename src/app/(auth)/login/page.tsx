@@ -1,13 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [usePassword, setUsePassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -15,10 +19,14 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      const body = usePassword
+        ? { email, password }
+        : { email }
+
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(body),
       })
 
       const data = await res.json()
@@ -26,6 +34,12 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.error || 'Something went wrong')
         setLoading(false)
+        return
+      }
+
+      if (usePassword) {
+        // Password login — redirect to dashboard immediately
+        router.push('/dashboard')
         return
       }
 
@@ -92,6 +106,23 @@ export default function LoginPage() {
             />
           </div>
 
+          {usePassword && (
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                required
+                className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
               {error}
@@ -103,7 +134,15 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Sending magic link…' : 'Continue'}
+            {loading ? 'Signing in...' : usePassword ? 'Sign in' : 'Send magic link'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setUsePassword(!usePassword); setError(''); }}
+            className="w-full text-center text-sm text-blue-600 hover:underline bg-transparent border-none cursor-pointer"
+          >
+            {usePassword ? 'Sign in with magic link instead' : 'Sign in with password instead'}
           </button>
         </form>
 
