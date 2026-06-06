@@ -268,7 +268,8 @@ export default function SignupWizard() {
         return
       }
 
-      router.push('/dashboard')
+      // Full page reload ensures cookies are passed to the server
+      window.location.href = '/dashboard'
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {

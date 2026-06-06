@@ -123,20 +123,14 @@ export async function POST(request: Request) {
       path: '/',
     })
 
-    // Set session cookie so user is auto-logged in
+    // Set sb-session cookie for the dashboard to detect
     const sessionData = JSON.stringify({
       access_token: '',
       refresh_token: '',
       expires_at: Date.now() + 3600000,
-      expires_in: 3600,
-      token_type: 'bearer',
-      user: {
-        id: userId,
-        email: regSession.email,
-      },
+      user: { id: userId, email: regSession.email },
     })
-    const encodedSession = encodeURIComponent(sessionData)
-    response.cookies.set('sb-session', encodedSession, {
+    response.cookies.set('sb-session', encodeURIComponent(sessionData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
