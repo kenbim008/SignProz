@@ -37,6 +37,12 @@ export async function POST(request: Request) {
         .eq('id', existingSessionId)
     }
 
+    // Also clean up any stale session for this email (in case cookie was lost)
+    await supabaseAdmin
+      .from('registration_sessions')
+      .delete()
+      .eq('email', email)
+
     // Generate OTP
     const otp = generateOtp()
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
@@ -54,7 +60,7 @@ export async function POST(request: Request) {
       .single()
 
     if (sessionError || !session) {
-      console.error('Session creation error:', sessionError)
+      console.error('Session creation error:', JSON.stringify(sessionError))
       return NextResponse.json({ error: 'Failed to start registration' }, { status: 500 })
     }
 
@@ -66,7 +72,7 @@ export async function POST(request: Request) {
     if (resendApiKey) {
       const resend = new Resend(resendApiKey)
       resend.emails.send({
-        from: 'SignProz <noreply@signproz.com>',
+        from: 'SignProz <onboarding@resend.dev>',
         to: email,
         subject: 'Your SignProz verification code',
         html: `<!DOCTYPE html>
@@ -76,22 +82,20 @@ export async function POST(request: Request) {
     <h1 style="color: #2563eb; font-size: 24px; margin: 0;">Sign<span style="color: #4f46e5;">Proz</span></h1>
   </div>
   <h2 style="color: #0f172a; font-size: 20px; text-align: center;">Your verification code</h2>
-  <p style="color: #64748b; text-align: center; font-size: 14px;">
-    Enter this code to verify your email address:
-  </p>
   <div style="background: #f8fafc; border-radius: 12px; padding: 24px; text-align: center; margin: 16px 0; border: 1px solid #e2e8f0;">
     <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #0f172a; font-family: monospace;">${otp}</span>
   </div>
-  <p style="color: #94a3b8; font-size: 12px; text-align: center;">
-    This code expires in 10 minutes.
-  </p>
+  <p style="color: #94a3b8; font-size: 12px; text-align: center;">This code expires in 10 minutes.</p>
 </body>
 </html>`,
       }).catch((e: unknown) => console.error('Resend error (non-blocking):', e))
     }
 
     // Set registration session cookie
-    const response = NextResponse.json({ sessionId: session.id })
+    const response = NextResponse.json({
+      sessionId: session.id,
+      devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
+    })
 
     response.cookies.set('reg_session', session.id, {
       httpOnly: true,

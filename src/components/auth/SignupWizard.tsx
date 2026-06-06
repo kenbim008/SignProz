@@ -20,6 +20,7 @@ export default function SignupWizard() {
   const [emailOtpSent, setEmailOtpSent] = useState(false)
   const [phoneOtpSent, setPhoneOtpSent] = useState(false)
   const [phoneOtpStep, setPhoneOtpStep] = useState<'send' | 'verify'>('send')
+  const [devOtp, setDevOtp] = useState('')
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
   const isValidPhone = (p: string) => /^\+?[\d\s\-()]{7,20}$/.test(p)
@@ -88,6 +89,7 @@ export default function SignupWizard() {
       }
 
       setSessionId(data.sessionId)
+      if (data.devOtp) setDevOtp(data.devOtp)
       setEmailOtpSent(true)
       setStep('details')
     } catch {
@@ -286,9 +288,12 @@ export default function SignupWizard() {
         body: JSON.stringify({ email, referralCode: referralCode || undefined }),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
         setError(data.error || 'Failed to resend code.')
+      } else if (data.devOtp) {
+        setDevOtp(data.devOtp)
       }
     } catch {
       setError('Something went wrong.')
@@ -418,7 +423,7 @@ export default function SignupWizard() {
         {/* STEP 3: Email OTP */}
         {step === 'verify-email' && (
           <EmailOtpStep
-            email={email} loading={loading}
+            email={email} loading={loading} devOtp={devOtp}
             onVerify={handleVerifyEmail}
             onResend={handleResendEmailOtp}
             onChangeEmail={handleChangeEmail}
@@ -443,10 +448,11 @@ export default function SignupWizard() {
 // ─── Sub-components ───────────────────────────────────────────
 
 function EmailOtpStep({
-  email, loading, onVerify, onResend, onChangeEmail,
+  email, loading, devOtp, onVerify, onResend, onChangeEmail,
 }: {
   email: string
   loading: boolean
+  devOtp: string
   onVerify: (otp: string) => Promise<void>
   onResend: () => Promise<void>
   onChangeEmail: () => void
@@ -462,6 +468,13 @@ function EmailOtpStep({
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-2xl font-bold text-slate-900">Verify your email</h2>
       <p className="text-gray-500 text-sm">We sent a 6-digit verification code to <strong>{email}</strong></p>
+
+      {devOtp && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-center">
+          <p className="text-xs font-medium mb-1">🔧 Dev mode — OTP not sent via email (Resend free tier)</p>
+          <p className="text-3xl font-mono font-bold tracking-widest">{devOtp}</p>
+        </div>
+      )}
 
       <div>
         <input type="text" value={otp}
