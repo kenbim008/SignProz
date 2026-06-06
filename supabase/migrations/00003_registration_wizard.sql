@@ -52,3 +52,5 @@ GRANT UPDATE (phone) ON TABLE public.profiles TO authenticated;
 -- Add OTP columns to registration_sessions (in case table already created)
 ALTER TABLE public.registration_sessions ADD COLUMN IF NOT EXISTS email_otp TEXT;
 ALTER TABLE public.registration_sessions ADD COLUMN IF NOT EXISTS email_otp_expires_at TIMESTAMPTZ;
+ALTER TABLE public.registration_sessions ADD COLUMN IF NOT EXISTS phone_otp TEXT;
+ALTER TABLE public.registration_sessions ADD COLUMN IF NOT EXISTS phone_otp_expires_at TIMESTAMPTZ;

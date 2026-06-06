@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getBrowserClient } from '@/lib/supabase/browser'
 import type { SignupStep, RegistrationSession } from '@/lib/types'
 
 export default function SignupWizard() {
@@ -170,21 +169,22 @@ export default function SignupWizard() {
     }
   }, [])
 
-  // Step 4a: Phone OTP — Send code via Supabase
+  // Step 4a: Phone OTP — Send code via custom API
   const handleSendPhoneOtp = useCallback(async () => {
     setError('')
     setLoading(true)
 
     try {
-      const supabase = getBrowserClient()
-      const { error: updateError } = await supabase.auth.updateUser({ phone })
+      const res = await fetch('/api/auth/register/phone-otp/send', { method: 'POST' })
+      const data = await res.json()
 
-      if (updateError) {
-        setError(updateError.message || 'Failed to send phone code.')
+      if (!res.ok) {
+        setError(data.error || 'Failed to send phone code.')
         setLoading(false)
         return
       }
 
+      if (data.devOtp) setDevOtp(data.devOtp)
       setPhoneOtpSent(true)
       setPhoneOtpStep('verify')
     } catch {
@@ -192,9 +192,9 @@ export default function SignupWizard() {
     } finally {
       setLoading(false)
     }
-  }, [phone])
+  }, [])
 
-  // Step 4b: Phone OTP — Verify code
+  // Step 4b: Phone OTP — Verify code via custom API
   const handleVerifyPhone = useCallback(async (otp: string) => {
     setError('')
     if (otp.length !== 6) {
@@ -205,27 +205,15 @@ export default function SignupWizard() {
     setLoading(true)
 
     try {
-      const supabase = getBrowserClient()
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        phone,
-        token: otp,
-        type: 'phone_change',
-      })
-
-      if (verifyError) {
-        setError('Invalid code. Please try again.')
-        setLoading(false)
-        return
-      }
-
-      const res = await fetch('/api/auth/register/session', {
-        method: 'PUT',
+      const res = await fetch('/api/auth/register/phone-otp/verify', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hasVerifiedPhone: true }),
+        body: JSON.stringify({ otp }),
       })
+      const data = await res.json()
 
       if (!res.ok) {
-        setError('Failed to update session state.')
+        setError(data.error || 'Invalid code. Try again.')
         setLoading(false)
         return
       }
@@ -435,7 +423,7 @@ export default function SignupWizard() {
         {step === 'verify-phone-password' && (
           <PhonePasswordStep
             phone={phone} phoneOtpSent={phoneOtpSent} phoneOtpStep={phoneOtpStep}
-            loading={loading}
+            loading={loading} devOtp={devOtp}
             onSendPhoneOtp={handleSendPhoneOtp}
             onVerifyPhone={handleVerifyPhone}
             onSetPassword={handleSetPassword}
@@ -501,13 +489,14 @@ function EmailOtpStep({
 }
 
 function PhonePasswordStep({
-  phone, phoneOtpSent, phoneOtpStep, loading,
+  phone, phoneOtpSent, phoneOtpStep, loading, devOtp,
   onSendPhoneOtp, onVerifyPhone, onSetPassword,
 }: {
   phone: string
   phoneOtpSent: boolean
   phoneOtpStep: 'send' | 'verify'
   loading: boolean
+  devOtp: string
   onSendPhoneOtp: () => Promise<void>
   onVerifyPhone: (otp: string) => Promise<void>
   onSetPassword: (password: string, confirmPassword: string) => Promise<void>
@@ -532,6 +521,13 @@ function PhonePasswordStep({
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-slate-900">Verify your phone</h2>
         <p className="text-gray-500 text-sm">We need to verify your phone number: <strong>{phone}</strong></p>
+
+        {devOtp && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-center">
+            <p className="text-xs font-medium mb-1">🔧 Dev mode — phone OTP</p>
+            <p className="text-3xl font-mono font-bold tracking-widest">{devOtp}</p>
+          </div>
+        )}
 
         {phoneOtpStep === 'send' && (
           <button type="button" onClick={onSendPhoneOtp} disabled={loading}
