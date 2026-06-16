@@ -41,5 +41,16 @@ ALTER TABLE public.signature_fields ADD CONSTRAINT signature_fields_height_check
 -- Ensure auth_tokens token is unique (was already UNIQUE but add index if missing)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_tokens_token_unique ON public.auth_tokens(token);
 
--- Add NOT NULL to signers.email if not already set
-ALTER TABLE public.signers ALTER COLUMN email SET NOT NULL;
+-- Add NOT NULL to signers.email if not already set (idempotent)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'signers'
+      AND column_name = 'email'
+      AND is_nullable = 'YES'
+  ) THEN
+    ALTER TABLE public.signers ALTER COLUMN email SET NOT NULL;
+  END IF;
+END $$;
