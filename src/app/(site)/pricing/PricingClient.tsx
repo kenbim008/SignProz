@@ -55,7 +55,7 @@ const plans = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
       </svg>
     ),
-    features: ['Everything in Pro', 'Unlimited senders', 'HIPAA compliance mode', '400+ integrations', 'Sales CRM integration', 'Microsoft 365 integration', 'Dedicated support', 'API access (affordable tiers)'],
+    features: ['Everything in Pro', 'Unlimited senders', 'Data encryption (TLS)', '400+ integrations', 'Sales CRM integration', 'Microsoft 365 integration', 'Dedicated support', 'API access (affordable tiers)'],
     cta: 'Start free trial',
     ctaHref: '/signup',
     ctaStyle: 'bg-fuchsia-600 text-white hover:bg-fuchsia-700',

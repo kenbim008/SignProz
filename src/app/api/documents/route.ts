@@ -1,8 +1,10 @@
+import DOMPurify from 'isomorphic-dompurify'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { addAuditLog } from '@/lib/utils'
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
+import { createDocumentSchema } from '@/lib/validation'
 
 export async function GET(request: Request) {
   const session = await getSession()
@@ -47,18 +49,30 @@ export async function POST(request: Request) {
 
   const supabase = await createServerClient()
   const supabaseAdmin = createAdminClient()
-  const { title, content, template_id, expiration_days } = await request.json()
-
-  if (!title) {
-    return Response.json({ error: 'Title is required' }, { status: 400 })
+  const parsed = createDocumentSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
+  const { title, content, template_id, expiration_days } = parsed.data
+
+  const sanitizedContent = content
+    ? DOMPurify.sanitize(content, {
+        ALLOWED_TAGS: [
+          'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+          'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'span', 'div',
+          'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'a', 'img',
+        ],
+        ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target'],
+        ALLOW_DATA_ATTR: false,
+      })
+    : null
 
   const { data, error } = await supabaseAdmin
     .from('documents')
     .insert({
       user_id: session.id,
       title,
-      content: content || null,
+      content: sanitizedContent,
       template_id: template_id || null,
       expiration_days: expiration_days || 7,
       status: 'draft',

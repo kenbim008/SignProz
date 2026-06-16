@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SignProz — Smart eSignature Platform
+
+SignProz is an electronic signature and document workflow platform built with Next.js and Supabase.
+
+## Architecture
+
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS 4
+- **Backend:** Next.js API Routes (server-side)
+- **Database:** Supabase PostgreSQL with Row-Level Security
+- **Auth:** Supabase Auth (email OTP / password)
+- **Email:** Resend (production) / Nodemailer (development)
+- **AI:** Anthropic SDK (agreement analysis, FAQ)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- Docker (for local Supabase)
+- A Supabase project (local or cloud)
+
+### Environment Variables
+
+Copy `.env.local.example` to `.env.local`:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key |
+| `RESEND_API_KEY` | No | Resend API key for email |
+| `ANTHROPIC_API_KEY` | No | For AI features |
+| `NEXT_PUBLIC_APP_URL` | Yes | Application base URL |
+
+### Database Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Apply migrations (uses supabase CLI)
+supabase link --project-ref <your-project>
+supabase db push
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Run Development Server
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+### Testing
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm test        # Run unit tests
+npm run test:watch  # Watch mode
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── (auth)/       # Login, signup pages
+│   ├── (site)/       # Marketing pages
+│   ├── api/          # Route handlers
+│   │   └── auth/     # Auth endpoints
+│   │   └── documents/# Document CRUD + signing
+│   ├── auth/         # Auth callback, OTP verify
+│   ├── dashboard/    # Main app
+│   └── sign/         # Public signing ceremony
+├── components/
+│   ├── auth/         # Signup wizard
+│   └── modals/       # AI modals, signature modal
+└── lib/
+    ├── supabase/     # Client configs
+    ├── email/        # Email templates
+    ├── auth.ts       # Session helper
+    ├── types.ts      # TypeScript types
+    ├── utils.ts      # Utility functions
+    ├── validation.ts # Zod schemas
+    └── rate-limit.ts # Rate limiter
+```
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+vercel deploy --prod
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set all environment variables in Vercel project settings before deploying.
+
+## Security
+
+- Authentication uses Supabase SSR with server-authoritative `auth.getUser()`
+- Document content is sanitized with DOMPurify to prevent XSS
+- Rate limiting on auth and AI endpoints
+- Signing tokens are unique and expire after 7 days
+- Sequential signing enforced server-side
+- Audit logs are append-only (DELETE blocked at DB level)

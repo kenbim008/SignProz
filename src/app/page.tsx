@@ -11,18 +11,18 @@ const keyFeatures = [
   'Recurring Affiliate Rewards (20-30%)',
   'Custom Branding',
   'Signing Links',
-  'HIPAA Compliance',
-  '400+ Integrations',
+  'Privacy & Compliance',
+  'API Access',
   'AI-Assisted Agreements',
   'SMS Delivery',
   'Native PDF Editing',
-  'Microsoft 365 Integration',
-  'Mobile App',
-  'Sales CRM Integration',
+  'Microsoft 365 (Coming soon)',
+  'Mobile App (Coming soon)',
+  'CRM Integration (Coming soon)',
   'Interactive Pricing Tables',
-  'Payments',
-  'Bulk Sending',
-  'Workflow Automation',
+  'Payments (Coming soon)',
+  'Bulk Sending (Coming soon)',
+  'Workflow Automation (Coming soon)',
   'Affordable API',
 ]
 
@@ -77,7 +77,7 @@ export default function HomePage() {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="rounded-xl bg-white/10 p-3">
                       <p className="text-indigo-200 text-xs">Integrations</p>
-                      <p className="font-bold text-lg">400+</p>
+                      <p className="font-bold text-lg">API</p>
                     </div>
                     <div className="rounded-xl bg-white/10 p-3">
                       <p className="text-indigo-200 text-xs">Affiliate reward</p>
@@ -85,11 +85,11 @@ export default function HomePage() {
                     </div>
                     <div className="rounded-xl bg-white/10 p-3">
                       <p className="text-indigo-200 text-xs">Sending modes</p>
-                      <p className="font-bold text-lg">Bulk + SMS</p>
+                      <p className="font-bold text-lg">SMS</p>
                     </div>
                     <div className="rounded-xl bg-white/10 p-3">
                       <p className="text-indigo-200 text-xs">Security</p>
-                      <p className="font-bold text-lg">HIPAA-ready</p>
+                      <p className="font-bold text-lg">Privacy-first</p>
                     </div>
                   </div>
                   <p className="text-[11px] text-indigo-100 mt-4">Designed for sales, legal operations, HR, and customer onboarding teams.</p>
@@ -149,7 +149,7 @@ export default function HomePage() {
                     <td className="p-3 font-semibold text-blue-800">SignProz</td>
                     <td className="p-3">$10/mo annual Pro ($20 monthly) &middot; Premium $39.95/mo annual</td>
                     <td className="p-3">Built-in AI agreement review + AI template generation</td>
-                    <td className="p-3">400+ + Microsoft 365 + CRM</td>
+                    <td className="p-3">API access</td>
                     <td className="p-3">Affordable API tiers</td>
                     <td className="p-3 text-emerald-700 font-semibold">20-30% recurring</td>
                   </tr>

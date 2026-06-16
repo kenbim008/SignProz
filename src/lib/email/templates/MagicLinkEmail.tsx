@@ -29,13 +29,13 @@ export function MagicLinkEmail({
   return (
     <Html>
       <Head />
-      <Preview>You've been asked to sign: {documentTitle}</Preview>
+      <Preview>You&apos;ve been asked to sign: {documentTitle}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
           <Heading style={styles.heading}>SignProz</Heading>
           <Text style={styles.greeting}>Hi {signerName},</Text>
           <Text style={styles.text}>
-            You've been asked to sign the document: <strong>{documentTitle}</strong>.
+            You&apos;ve been asked to sign the document: <strong>{documentTitle}</strong>.
           </Text>
           <Section style={styles.buttonSection}>
             <Button href={magicUrl} style={styles.button}>

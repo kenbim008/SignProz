@@ -63,6 +63,9 @@ const FIELD_PALETTE = [
   { kind: 'title-field', label: 'Title Field', icon: 'fa-briefcase', section: 'add-fields', color: '#f43f5e' },
 ]
 
+const CANVAS_WIDTH = 612
+const CANVAS_HEIGHT = 792
+
 export default function DocumentEditorPage() {
   const params = useParams()
   const id = params.id as string
@@ -121,7 +124,7 @@ export default function DocumentEditorPage() {
       if (draggingFieldId) {
         setFields(prev => prev.map(f => {
           if (f.id !== draggingFieldId) return f
-          return { ...f, position_x: e.clientX - dragOffset.x, position_y: e.clientY - dragOffset.y }
+          return { ...f, position_x: Math.round(((e.clientX - dragOffset.x) / CANVAS_WIDTH) * 10000) / 100, position_y: Math.round(((e.clientY - dragOffset.y) / CANVAS_HEIGHT) * 10000) / 100 }
         }))
       }
       if (resizingFieldId) {
@@ -129,7 +132,9 @@ export default function DocumentEditorPage() {
           if (f.id !== resizingFieldId) return f
           const deltaW = e.clientX - resizeStart.x
           const deltaH = e.clientY - resizeStart.y
-          return { ...f, width: Math.max(80, resizeStart.w + deltaW), height: Math.max(30, resizeStart.h + deltaH) }
+          const newPixelWidth = Math.max(80, resizeStart.w + deltaW)
+          const newPixelHeight = Math.max(30, resizeStart.h + deltaH)
+          return { ...f, width: Math.round((newPixelWidth / CANVAS_WIDTH) * 10000) / 100, height: Math.round((newPixelHeight / CANVAS_HEIGHT) * 10000) / 100 }
         }))
       }
     }
@@ -386,8 +391,8 @@ export default function DocumentEditorPage() {
         signer_id: activeSignerId,
         position_x: pos.x,
         position_y: pos.y,
-        width: 200,
-        height: 60,
+        width: Math.round((200 / CANVAS_WIDTH) * 10000) / 100,
+        height: Math.round((60 / CANVAS_HEIGHT) * 10000) / 100,
         value: null,
         signed_at: null,
       },
@@ -414,8 +419,8 @@ export default function DocumentEditorPage() {
         signer_id: activeSignerId,
         position_x: pos.x,
         position_y: pos.y,
-        width: 200,
-        height: 60,
+        width: Math.round((200 / CANVAS_WIDTH) * 10000) / 100,
+        height: Math.round((60 / CANVAS_HEIGHT) * 10000) / 100,
         value: null,
         signed_at: null,
       },
@@ -1202,10 +1207,10 @@ export default function DocumentEditorPage() {
                         key={field.id}
                         className={`signature-field ${isSelected ? 'selected' : ''} ${isDragging ? 'opacity-50' : ''}`}
                         style={{
-                          left: field.position_x,
-                          top: field.position_y,
-                          width: field.width,
-                          height: field.height,
+                          left: (field.position_x / 100) * CANVAS_WIDTH,
+                          top: (field.position_y / 100) * CANVAS_HEIGHT,
+                          width: (field.width / 100) * CANVAS_WIDTH,
+                          height: (field.height / 100) * CANVAS_HEIGHT,
                           color,
                           borderColor: color,
                           borderStyle: field.value ? 'solid' : 'dashed',
@@ -1219,7 +1224,7 @@ export default function DocumentEditorPage() {
                           e.stopPropagation()
                           e.preventDefault()
                           setDraggingFieldId(field.id)
-                          setDragOffset({ x: e.clientX - field.position_x, y: e.clientY - field.position_y })
+                          setDragOffset({ x: e.clientX - (field.position_x / 100) * CANVAS_WIDTH, y: e.clientY - (field.position_y / 100) * CANVAS_HEIGHT })
                         }}
                         title={`${field.field_type} — ${signers.find((s) => s.id === field.signer_id)?.name || 'Unassigned'}`}
                       >
@@ -1238,7 +1243,7 @@ export default function DocumentEditorPage() {
                                 e.stopPropagation()
                                 e.preventDefault()
                                 setResizingFieldId(field.id)
-                                setResizeStart({ x: e.clientX, y: e.clientY, w: field.width, h: field.height })
+                                setResizeStart({ x: e.clientX, y: e.clientY, w: (field.width / 100) * CANVAS_WIDTH, h: (field.height / 100) * CANVAS_HEIGHT })
                               }}
                             >
                               <i className="fas fa-expand-arrows-alt text-[8px]" aria-hidden="true" />
@@ -1431,8 +1436,8 @@ export default function DocumentEditorPage() {
                               f.id === selectedFieldId ? { ...f, width: Number(e.target.value) } : f
                             ))
                           }}
-                          min={50}
-                          max={500}
+                          min={8}
+                          max={82}
                           className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-400"
                         />
                       </div>
@@ -1446,8 +1451,8 @@ export default function DocumentEditorPage() {
                               f.id === selectedFieldId ? { ...f, height: Number(e.target.value) } : f
                             ))
                           }}
-                          min={30}
-                          max={200}
+                          min={4}
+                          max={25}
                           className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-400"
                         />
                       </div>
