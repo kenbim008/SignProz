@@ -18,7 +18,7 @@ const QUICK_QUESTIONS = [
   'How does affiliate commission work?',
   'What API and integrations are supported?',
   'How do I send documents in bulk?',
-  'Do you support HIPAA compliant workflows?',
+  'What security measures do you have in place?',
 ]
 
 export function AiFaqModal({ isOpen, onClose }: AiFaqModalProps) {
