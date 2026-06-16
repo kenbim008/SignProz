@@ -77,6 +77,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=session_failed', request.url))
   }
 
+  console.log('[callback] Magic link login success')
+
   const redirectUrl = new URL('/dashboard', request.url)
   const response = NextResponse.redirect(redirectUrl)
   return response
