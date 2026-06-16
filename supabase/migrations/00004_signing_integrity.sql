@@ -23,6 +23,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS enforce_signer_document_match ON public.signature_fields;
 CREATE TRIGGER enforce_signer_document_match
   BEFORE INSERT OR UPDATE ON public.signature_fields
   FOR EACH ROW EXECUTE FUNCTION public.check_signer_document_match();
