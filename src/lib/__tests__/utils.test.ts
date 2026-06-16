@@ -15,18 +15,18 @@ describe('isTokenExpired', () => {
 
 describe('isSequentialSigning', () => {
   it('returns false when all signers have order 0', () => {
-    const signers = [
-      { id: '1', order: 0 },
-      { id: '2', order: 0 },
+    const signers: { order: number }[] = [
+      { order: 0 },
+      { order: 0 },
     ]
-    expect(isSequentialSigning(signers as any)).toBe(false)
+    expect(isSequentialSigning(signers)).toBe(false)
   })
 
   it('returns true when any signer has order > 0', () => {
-    const signers = [
-      { id: '1', order: 0 },
-      { id: '2', order: 1 },
+    const signers: { order: number }[] = [
+      { order: 0 },
+      { order: 1 },
     ]
-    expect(isSequentialSigning(signers as any)).toBe(true)
+    expect(isSequentialSigning(signers)).toBe(true)
   })
 })
