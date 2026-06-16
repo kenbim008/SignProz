@@ -201,22 +201,33 @@ export async function POST(request: Request, { params }: RouteParams) {
       )
 
       // Send completion email to owner
+      let ownerEmail = ''
+      let ownerName = 'there'
+
       const { data: owner } = await supabaseAdmin
         .from('profiles')
         .select('email, full_name')
         .eq('id', document.user_id)
         .single()
 
-      if (owner) {
-        await sendCompletionEmail({
-          documentId,
-          documentTitle: document.title,
-          ownerEmail: owner.email,
-          ownerName: owner.full_name || 'there',
-          signerCount: allSigners?.length || 0,
-          signedAt: new Date().toISOString(),
-        })
+      if (owner?.email) {
+        ownerEmail = owner.email
+        ownerName = owner.full_name || 'there'
+      } else {
+        // Fallback to auth user email if profiles.email is null
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(document.user_id)
+        ownerEmail = authUser?.user?.email || ''
+        ownerName = (authUser?.user?.user_metadata?.full_name as string) || 'there'
       }
+
+      await sendCompletionEmail({
+        documentId,
+        documentTitle: document.title,
+        ownerEmail,
+        ownerName,
+        signerCount: allSigners?.length || 0,
+        signedAt: new Date().toISOString(),
+      })
     } else {
       // Sequential mode: find next pending signer
       const sequential = isSequentialSigning(allSigners || [])
@@ -231,11 +242,21 @@ export async function POST(request: Request, { params }: RouteParams) {
 
         if (nextSigner) {
           // Fetch owner email for magic link email
+          let ownerEmail = ''
+
           const { data: owner } = await supabaseAdmin
             .from('profiles')
             .select('email')
             .eq('id', document.user_id)
             .single()
+
+          if (owner?.email) {
+            ownerEmail = owner.email
+          } else {
+            // Fallback to auth user email if profiles.email is null
+            const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(document.user_id)
+            ownerEmail = authUser?.user?.email || ''
+          }
 
           await sendMagicLinkEmail(
             {
@@ -249,7 +270,7 @@ export async function POST(request: Request, { params }: RouteParams) {
               title: document.title,
               expiration_days: document.expiration_days,
             },
-            owner?.email || ''
+            ownerEmail
           )
 
           await addAuditLog(
