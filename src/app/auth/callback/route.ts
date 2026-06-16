@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createServerClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   const supabaseAdmin = createAdminClient()
 
-  // Look up token (admin client bypasses RLS — callback is unauthenticated)
+  // Look up token
   const { data: tokenData, error } = await supabaseAdmin
     .from('auth_tokens')
     .select('*')
@@ -27,6 +28,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=expired_token', request.url))
   }
 
+  // Check if already used
+  if (tokenData.used_at) {
+    return NextResponse.redirect(new URL('/login?error=token_already_used', request.url))
+  }
+
   // Find or create user
   let userId = tokenData.user_id
 
@@ -37,24 +43,15 @@ export async function GET(request: NextRequest) {
     if (existingUser) {
       userId = existingUser.id
     } else {
-      const { data: authData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: authData } = await supabaseAdmin.auth.admin.createUser({
         email: tokenData.email,
         email_confirm: true,
       })
-
-      if (signUpError) {
-        console.error('User creation error:', signUpError)
-        return NextResponse.redirect(new URL('/login?error=creation_failed', request.url))
-      }
-
       userId = authData.user?.id
     }
 
     if (userId) {
-      await supabaseAdmin
-        .from('auth_tokens')
-        .update({ user_id: userId })
-        .eq('token', token)
+      await supabaseAdmin.from('auth_tokens').update({ user_id: userId }).eq('token', token)
     }
   }
 
@@ -62,55 +59,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=user_not_found', request.url))
   }
 
-  console.log('[callback] User found:', { userId, email: tokenData.email })
-
   // Mark token as used
-  await supabaseAdmin
-    .from('auth_tokens')
-    .update({ used_at: new Date().toISOString() })
-    .eq('token', token)
+  await supabaseAdmin.from('auth_tokens').update({ used_at: new Date().toISOString() }).eq('token', token)
 
-  // Build the redirect response
+  // Create a REAL Supabase session by setting a temp password and signing in
+  const tempPassword = crypto.randomUUID() + crypto.randomUUID()
+  await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword })
+
+  const supabase = await createServerClient()
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: tokenData.email,
+    password: tempPassword,
+  })
+
+  if (signInError) {
+    console.error('Session creation failed:', signInError.message)
+    return NextResponse.redirect(new URL('/login?error=session_failed', request.url))
+  }
+
   const redirectUrl = new URL('/dashboard', request.url)
   const response = NextResponse.redirect(redirectUrl)
-
-  // Set session cookies using cookie header directly
-  // These cookies will be set when the browser loads /dashboard
-  const sessionData = JSON.stringify({
-    access_token: token, // Use the magic link token as a temporary access token
-    refresh_token: token,
-    expires_at: Date.now() + 3600000,
-    expires_in: 3600,
-    token_type: 'bearer',
-    user: {
-      id: userId,
-      email: tokenData.email,
-    },
-  })
-
-  // Encode for URL safety
-  const encodedSession = encodeURIComponent(sessionData)
-
-  console.log('[callback] Setting sb-session cookie, length:', encodedSession.length)
-
-  // Set cookie on redirect response
-  response.cookies.set('sb-session', encodedSession, {
-    httpOnly: false,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: 3600,
-    path: '/',
-  })
-
-  // Also set a flag
-  response.cookies.set('auth-success', 'true', {
-    httpOnly: false,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: 60,
-    path: '/',
-  })
-
-  console.log('[callback] Redirecting to dashboard')
   return response
 }
