@@ -36,11 +36,6 @@ const tierColors: Record<string, string> = {
   platinum: 'bg-indigo-600 text-white',
 }
 
-const recentReferrals = [
-  { email: 'alex@company.com', plan: 'Pro', earnings: 7.25, status: 'active' },
-  { email: 'sam@startup.io', plan: 'Pending invite', earnings: 0, status: 'pending' },
-  { email: 'legal@enterprise.co', plan: 'Enterprise', earnings: 124.75, status: 'active' },
-]
 
 const SIGN_EDIT_PALETTE = [
   { kind: 'signature', label: 'My Signature', icon: 'fa-signature' },
@@ -98,15 +93,11 @@ export default function DashboardPage() {
   const [docFilter, setDocFilter] = useState<DocFilter>('documents')
   const [searchQuery, setSearchQuery] = useState('')
   const [cloudMenuOpen, setCloudMenuOpen] = useState(false)
-  const [showSampleReferrals, setShowSampleReferrals] = useState(false)
   const [openDocMenu, setOpenDocMenu] = useState<string | null>(null)
 
   // Affiliate state
   const [affiliateStats, setAffiliateStats] = useState({ totalReferrals: 0, activeAccounts: 0, expectedPayout: 0, paidOut: 0, tier: 'bronze' })
   const [tier, setTier] = useState('bronze')
-  const [stripeConnected, setStripeConnected] = useState(false)
-  const [stripeConnectStep, setStripeConnectStep] = useState<'idle' | 'pending' | 'connected'>('idle')
-  const [withdrawableBalance, setWithdrawableBalance] = useState(0)
   const [showAIAgreement, setShowAIAgreement] = useState(false)
   const [showAITemplate, setShowAITemplate] = useState(false)
   const [aiAgreementText, setAiAgreementText] = useState('')
@@ -138,11 +129,9 @@ export default function DashboardPage() {
             if (stats) {
               setAffiliateStats(stats)
               setTier(stats.tier || 'bronze')
-              setWithdrawableBalance(stats.expectedPayout || 0)
             }
           })
-          .catch(() => {/* use mock data */}
-          )
+          .catch(() => { setAffiliateStats({ totalReferrals: 0, activeAccounts: 0, expectedPayout: 0, paidOut: 0, tier: 'bronze' }) })
       })
       .catch(() => { router.push('/login') })
   }, [router])
@@ -191,6 +180,9 @@ export default function DashboardPage() {
     let docs = documents
     const q = searchQuery.trim().toLowerCase()
     if (q) docs = docs.filter((d) => d.title.toLowerCase().includes(q))
+    if (docFilter === 'waiting_me') docs = docs.filter(d => d.status === 'sent' || d.status === 'partially_signed')
+    else if (docFilter === 'waiting_others') docs = docs.filter(d => d.status === 'sent' || d.status === 'partially_signed')
+    else if (docFilter === 'signed') docs = docs.filter(d => d.status === 'completed')
     return docs
   }
 
@@ -205,39 +197,6 @@ export default function DashboardPage() {
     const link = `${window.location.origin}/?ref=${session?.affiliateCode || ''}`
     navigator.clipboard.writeText(link)
     alert('Referral link copied! Share it to earn 20-30% recurring commissions.')
-  }
-
-  const MIN_WITHDRAWAL = 50
-
-  function getWithdrawalEligibility() {
-    const isPayoutDay = new Date().getDate() === 15
-    const meetsMinimum = withdrawableBalance >= MIN_WITHDRAWAL
-    const eligible = isPayoutDay && meetsMinimum
-    let reason = ''
-    if (!isPayoutDay) reason = 'Withdrawals are available on the 15th of each month.'
-    else if (!meetsMinimum) reason = `Minimum withdrawal is $${MIN_WITHDRAWAL}. Current balance: $${withdrawableBalance.toFixed(2)}.`
-    else reason = 'Ready to withdraw.'
-    return { amount: withdrawableBalance, eligible, reason }
-  }
-
-  function startStripeConnect() {
-    setStripeConnectStep('pending')
-    alert('Stripe Connect flow initiated. Click "Confirm connection" to finish linking your Stripe account.')
-  }
-
-  function confirmStripeConnect() {
-    setStripeConnectStep('connected')
-    setStripeConnected(true)
-    alert('Stripe connected successfully! You can request payouts when eligible.')
-  }
-
-  function requestWithdrawal() {
-    if (!stripeConnected) { alert('Connect Stripe first to receive payouts.'); return }
-    const status = getWithdrawalEligibility()
-    if (!status.eligible) { alert(status.reason || 'Withdrawal not available yet.'); return }
-    const amount = status.amount
-    setWithdrawableBalance(0)
-    alert(`Withdrawal request submitted for $${amount.toFixed(2)}. Funds will be processed to your Stripe account.`)
   }
 
   function analyzeAgreementHeuristic(text: string): { risks: string[]; flags: string[]; summary: string } {
@@ -375,9 +334,9 @@ export default function DashboardPage() {
                   </button>
                   {cloudMenuOpen && (
                     <div className="cloud-menu" style={{ marginTop: '-6px', marginBottom: '18px', border: '1px solid #e5e7eb', borderRadius: '6px', overflow: 'hidden', fontSize: '12px', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
-                      <button style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', color: '#475569' }}>Google Drive</button>
-                      <button style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', color: '#475569' }}>Dropbox</button>
-                      <button style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', color: '#475569' }}>Box</button>
+                      <button style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', color: '#475569' }}>Google Drive (Coming soon)</button>
+                      <button style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', color: '#475569' }}>Dropbox (Coming soon)</button>
+                      <button style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: '#fff', cursor: 'pointer', color: '#475569' }}>Box (Coming soon)</button>
                     </div>
                   )}
                 </div>
@@ -403,7 +362,7 @@ export default function DashboardPage() {
                       onClick={() => setDocFilter(f)}
                       className={`block w-full text-left px-2 py-1.5 text-xs rounded-md ${docFilter === f ? 'text-blue-600 font-semibold bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                      {f === 'documents' ? 'Documents' : f === 'waiting_me' ? 'Waiting for me' : f === 'waiting_others' ? 'Waiting for others' : 'Signed'}
+                      {f === 'documents' ? 'Documents' : f === 'waiting_me' ? 'Sent' : f === 'waiting_others' ? 'In Progress' : 'Completed'}
                     </button>
                   ))}
                 </div>
@@ -620,13 +579,13 @@ export default function DashboardPage() {
                     onClick={() => setShowAIAgreement(true)}
                     className="bg-violet-100 text-violet-800 border border-violet-200 px-4 py-2 rounded-full text-sm font-medium hover:bg-violet-200"
                   >
-                    <i className="fas fa-magic mr-1" aria-hidden="true"></i> AI agreement review
+                    <i className="fas fa-magic mr-1" aria-hidden="true"></i> Agreement review (heuristic)
                   </button>
                   <button
                     onClick={() => setShowAITemplate(true)}
                     className="bg-teal-100 text-teal-800 border border-teal-200 px-4 py-2 rounded-full text-sm font-medium hover:bg-teal-200"
                   >
-                    <i className="fas fa-sparkles mr-1" aria-hidden="true"></i> AI generate template
+                    <i className="fas fa-sparkles mr-1" aria-hidden="true"></i> Template demo
                   </button>
                 </div>
                 {/* Field palette (collapsible) */}
@@ -672,15 +631,6 @@ export default function DashboardPage() {
                 <div className="flex gap-2">
                   <button onClick={copyReferralLink} className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-green-200">
                     <i className="fas fa-link mr-1"></i> Copy Referral Link
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowSampleReferrals(!showSampleReferrals)
-                      if (!showSampleReferrals) setWithdrawableBalance(11.60)
-                    }}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200"
-                  >
-                    <i className="fas fa-chart-line mr-1"></i> Load Sample
                   </button>
                 </div>
               </div>
@@ -777,88 +727,16 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Recent referral activity */}
-              <div className="mt-8 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-2">Recent referral activity</h3>
-                {!showSampleReferrals && (
-                  <p className="text-xs text-gray-500 mb-3">Use <strong>Load sample</strong> above to populate this list.</p>
-                )}
-                <div className="space-y-2">
-                  {(showSampleReferrals ? recentReferrals : []).map((r, i) => (
-                    <div key={i} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg text-sm">
-                      <div>
-                        <span className="font-medium">{r.email}</span>
-                        <span className="text-gray-400 ml-2">— {r.plan}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {r.status === 'active' ? 'Active' : 'Pending'}
-                        </span>
-                        {r.earnings > 0 && (
-                          <span className="text-green-600 font-semibold">+${r.earnings.toFixed(2)}/mo</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Stripe Payout Panel */}
-              <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+              {/* Stripe Payouts — Coming Soon */}
+              <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm opacity-60">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fab fa-stripe-s text-indigo-600"></i> Stripe Payouts</h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stripeConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {stripeConnected ? 'Connected' : 'Not connected'}
-                  </span>
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <i className="fab fa-stripe-s text-indigo-600"></i> Stripe Payouts
+                  </h3>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">Coming Soon</span>
                 </div>
-                <p className="text-xs text-gray-500 mb-4">Connect Stripe to receive affiliate payouts directly to your account.</p>
-
-                {/* Withdrawable amount */}
-                <div className="bg-blue-50 rounded-xl p-4 mb-4 text-center">
-                  <div className="text-3xl font-bold text-blue-600">${withdrawableBalance.toFixed(2)}</div>
-                  <div className="text-xs text-gray-500 mt-1">Withdrawable balance</div>
-                </div>
-
-                {/* Eligibility */}
-                {(() => {
-                  const status = getWithdrawalEligibility()
-                  return (
-                    <>
-                      <p className={`text-xs mb-3 ${status.eligible ? 'text-green-700' : 'text-amber-700'}`}>
-                        {status.eligible ? 'Withdrawal available today.' : status.reason}
-                      </p>
-                      <button
-                        onClick={requestWithdrawal}
-                        disabled={!status.eligible || !stripeConnected}
-                        className={`w-full px-3 py-2 rounded-lg text-sm font-semibold mb-4 ${status.eligible && stripeConnected ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                      >
-                        <i className="fas fa-wallet mr-1"></i> Withdraw earnings
-                      </button>
-                    </>
-                  )
-                })()}
-
-                {/* Stripe Connect steps */}
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-xs text-gray-500 mb-2 font-medium">Stripe Connect setup (2 steps)</p>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={startStripeConnect}
-                      disabled={stripeConnected}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium border ${stripeConnected ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100'}`}
-                    >
-                      1) Connect Stripe
-                    </button>
-                    <button
-                      onClick={confirmStripeConnect}
-                      disabled={stripeConnected || stripeConnectStep !== 'pending'}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium border ${stripeConnected || stripeConnectStep !== 'pending' ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-indigo-300 text-indigo-800 bg-indigo-100 hover:bg-indigo-200'}`}
-                    >
-                      2) Confirm connection
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">After connecting, confirm to activate payouts on your Stripe account.</p>
-                </div>
+                <p className="text-xs text-gray-500">Stripe Connect integration is in development. You'll be able to receive affiliate payouts directly.</p>
               </div>
             </div>
           )}
