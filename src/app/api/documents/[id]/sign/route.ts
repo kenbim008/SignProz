@@ -64,7 +64,56 @@ export async function POST(request: Request, { params }: RouteParams) {
       )
     }
 
-    // 6. Update signature fields with filled values
+    // 6. Load and validate fields
+    const { data: assignedFields, error: fieldsError } = await supabaseAdmin
+      .from('signature_fields')
+      .select('*')
+      .eq('signer_id', signer.id)
+
+    if (fieldsError) {
+      return Response.json({ error: 'Failed to load signature fields' }, { status: 500 })
+    }
+
+    // Collect submitted field IDs
+    const submittedFieldIds = new Set(fields.map((f: { fieldId: string }) => f.fieldId))
+
+    // Check every required field is submitted
+    const missingFields = assignedFields.filter(f => f.is_required && !submittedFieldIds.has(f.id))
+    if (missingFields.length > 0) {
+      return Response.json({
+        error: 'Missing required fields',
+        missingFields: missingFields.map(f => f.id),
+      }, { status: 400 })
+    }
+
+    // Check every submitted field belongs to this signer
+    const validFieldIds = new Set(assignedFields.map(f => f.id))
+    const invalidFields = fields.filter((f: { fieldId: string }) => !validFieldIds.has(f.fieldId))
+    if (invalidFields.length > 0) {
+      return Response.json({
+        error: 'Invalid fields submitted',
+        invalidFields: invalidFields.map(f => f.fieldId),
+      }, { status: 400 })
+    }
+
+    // Validate field values
+    for (const field of fields) {
+      if (typeof field.value === 'string' && field.value.startsWith('data:image/')) {
+        const sizeInBytes = (field.value.length * 3) / 4
+        if (sizeInBytes > 500 * 1024) {
+          return Response.json({
+            error: `Signature image exceeds 500KB limit (field: ${field.fieldId})`,
+          }, { status: 400 })
+        }
+      }
+      if (typeof field.value === 'string' && field.value.trim() === '') {
+        return Response.json({
+          error: `Field ${field.fieldId} cannot be empty`,
+        }, { status: 400 })
+      }
+    }
+
+    // 7. Update signature fields with filled values
     for (const field of fields) {
       await supabaseAdmin
         .from('signature_fields')
@@ -73,7 +122,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         .eq('signer_id', signer.id)
     }
 
-    // 7. Build signed_data object and update signer
+    // 8. Build signed_data object and update signer
     const signedData: Record<string, unknown> = {}
     for (const field of fields) {
       signedData[field.fieldId] = field.value
@@ -87,7 +136,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       })
       .eq('id', signer.id)
 
-    // 8. If signer has not viewed the document, set viewed_at
+    // 9. If signer has not viewed the document, set viewed_at
     if (!signer.viewed_at) {
       await supabaseAdmin
         .from('signers')
@@ -95,7 +144,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         .eq('id', signer.id)
     }
 
-    // 9. Add audit log
+    // 10. Add audit log
     await addAuditLog(
       supabaseAdmin,
       documentId,
@@ -104,7 +153,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       { signerId: signer.id }
     )
 
-    // 10. Check all signers status
+    // 11. Check all signers status
     const { data: allSigners } = await supabaseAdmin
       .from('signers')
       .select('*')
