@@ -16,6 +16,7 @@
     "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
+    "isomorphic-dompurify": "^3.17.0",
     "jose": "^6.2.3",
     "next": "16.2.4",
     "nodemailer": "^8.0.7",

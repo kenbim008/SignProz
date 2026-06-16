@@ -1,3 +1,4 @@
+import DOMPurify from 'isomorphic-dompurify'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTokenExpired } from '@/lib/utils'
 
@@ -42,6 +43,19 @@ export async function GET(request: Request, { params }: RouteParams) {
   // Check if token expired
   if (isTokenExpired(signer.token_expires_at)) {
     return Response.json({ error: 'Link expired' }, { status: 410 })
+  }
+
+  // Sanitize document content to prevent stored XSS
+  if (document.content) {
+    document.content = DOMPurify.sanitize(document.content, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'span', 'div',
+        'hr', 'a', 'img',
+      ],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target'],
+      ALLOW_DATA_ATTR: false,
+    })
   }
 
   return Response.json({
