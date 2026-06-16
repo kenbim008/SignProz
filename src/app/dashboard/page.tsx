@@ -18,7 +18,8 @@ interface Doc {
 }
 
 interface Session {
-  session: { user: { email: string; affiliateCode: string } } | null
+  email: string
+  affiliateCode: string
 }
 
 const revenueProjection = {
@@ -119,9 +120,12 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch('/api/auth/session')
       .then((r) => r.json())
-      .then((data: Session) => {
+      .then((data) => {
         if (!data.session) { router.push('/login'); return }
-        setSession(data.session.user)
+        setSession({
+          email: data.session.user.email,
+          affiliateCode: data.session.user.affiliateCode || '',
+        })
         fetch('/api/documents')
           .then((r) => r.json())
           .then((d) => { setDocuments(d.documents || []); setLoading(false) })
