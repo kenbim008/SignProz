@@ -2,7 +2,8 @@
 -- Signing integrity constraints
 -- =============================================
 
--- Ensure magic tokens are unique
+-- Ensure magic tokens are unique (idempotent: drop if exists, then add)
+ALTER TABLE public.signers DROP CONSTRAINT IF EXISTS signers_magic_token_unique;
 ALTER TABLE public.signers ADD CONSTRAINT signers_magic_token_unique UNIQUE (magic_token);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_signers_magic_token_unique ON public.signers(magic_token);
 

@@ -22,7 +22,11 @@ ALTER TABLE public.signature_fields ADD COLUMN IF NOT EXISTS page_number INT NOT
 -- Add label column to signature_fields
 ALTER TABLE public.signature_fields ADD COLUMN IF NOT EXISTS label TEXT;
 
--- Standardize coordinate system: store as percentages (0-100)
+-- Standardize coordinate system: store as percentages (0-100) (idempotent: drop if exists, then add)
+ALTER TABLE public.signature_fields DROP CONSTRAINT IF EXISTS signature_fields_position_x_check;
+ALTER TABLE public.signature_fields DROP CONSTRAINT IF EXISTS signature_fields_position_y_check;
+ALTER TABLE public.signature_fields DROP CONSTRAINT IF EXISTS signature_fields_width_check;
+ALTER TABLE public.signature_fields DROP CONSTRAINT IF EXISTS signature_fields_height_check;
 ALTER TABLE public.signature_fields ADD CONSTRAINT signature_fields_position_x_check
   CHECK (position_x >= 0 AND position_x <= 100);
 ALTER TABLE public.signature_fields ADD CONSTRAINT signature_fields_position_y_check
