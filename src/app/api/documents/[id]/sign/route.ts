@@ -113,6 +113,28 @@ export async function POST(request: Request, { params }: RouteParams) {
       }
     }
 
+    // Check sequential signing order
+    const { data: allSignersOrdered } = await supabaseAdmin
+      .from('signers')
+      .select('*')
+      .eq('document_id', documentId)
+      .order('order', { ascending: true })
+
+    if (!allSignersOrdered) {
+      return Response.json({ error: 'Failed to load signers' }, { status: 500 })
+    }
+
+    const hasSequential = allSignersOrdered.some(s => s.order > 0)
+
+    if (hasSequential) {
+      const unsignedInOrder = allSignersOrdered.filter(s => !s.signed_at)
+      if (unsignedInOrder.length > 0 && unsignedInOrder[0].id !== signer.id) {
+        return Response.json({
+          error: 'Signing order enforced. Another signer must sign first.',
+        }, { status: 403 })
+      }
+    }
+
     // 7. Update signature fields with filled values
     for (const field of fields) {
       await supabaseAdmin
