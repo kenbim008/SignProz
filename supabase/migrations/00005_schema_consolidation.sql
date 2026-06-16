@@ -32,8 +32,7 @@ ALTER TABLE public.signature_fields ADD CONSTRAINT signature_fields_width_check
 ALTER TABLE public.signature_fields ADD CONSTRAINT signature_fields_height_check
   CHECK (height >= 1 AND height <= 100);
 
--- Ensure signer magic_token is unique
-ALTER TABLE public.signers ADD CONSTRAINT IF NOT EXISTS signers_magic_token_key UNIQUE (magic_token);
+-- Note: signers magic_token unique constraint was added in 00004_signing_integrity.sql
 
 -- Ensure auth_tokens token is unique (was already UNIQUE but add index if missing)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_tokens_token_unique ON public.auth_tokens(token);
