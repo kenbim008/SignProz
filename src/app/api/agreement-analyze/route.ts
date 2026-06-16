@@ -1,5 +1,6 @@
 import { Anthropic } from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 const SYSTEM_PROMPT = `You are a legal document analyst. Analyze the provided document text and return a structured JSON response. Always return valid JSON matching the exact schema. Focus on: key obligations, deadlines, parties involved, risky clauses (indemnification, liability caps, auto-renewal, termination traps), and recommended actions for a signer.`
 
@@ -9,6 +10,15 @@ function getAnthropic() {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed, remaining } = rateLimit(`ai:${ip}`, 10, 60000)
+  if (!allowed) {
+    return Response.json(
+      { error: 'Too many attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '60' } }
+    )
+  }
+
   const { content } = await request.json()
 
   if (!content || typeof content !== 'string') {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit } from '@/lib/rate-limit'
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -8,6 +9,16 @@ function generateOtp(): string {
 
 export async function POST() {
   try {
+    const headersList = await headers()
+    const ip = headersList.get('x-forwarded-for') || 'unknown'
+    const { allowed, remaining } = rateLimit(`phone-otp:${ip}`, 3, 60000)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': '60' } as HeadersInit }
+      )
+    }
+
     const cookieStore = await cookies()
     const sessionId = cookieStore.get('reg_session')?.value
 

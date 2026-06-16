@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 const FALLBACK_ANSWERS: Record<string, string> = {
   pricing:
@@ -19,6 +20,15 @@ const DEFAULT_ANSWER =
   "That's a great question! SignProz is a professional eSignature platform with AI assistance, 400+ integrations, and recurring affiliate rewards. Visit /pricing for plan details or /affiliate to learn about our affiliate program."
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed, remaining } = rateLimit(`ai:${ip}`, 20, 60000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '60' } as HeadersInit }
+    )
+  }
+
   const { searchParams } = new URL(request.url)
   const question = (searchParams.get('question') || '').toLowerCase().trim()
 

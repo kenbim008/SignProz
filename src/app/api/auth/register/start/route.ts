@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
 import { cookies } from 'next/headers'
+import { rateLimit } from '@/lib/rate-limit'
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -9,6 +10,15 @@ function generateOtp(): string {
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    const { allowed, remaining } = rateLimit(`register:${ip}`, 3, 60000)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': '60' } as HeadersInit }
+      )
+    }
+
     const { email, referralCode } = await request.json()
 
     // Validation

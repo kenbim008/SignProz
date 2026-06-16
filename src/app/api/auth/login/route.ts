@@ -1,9 +1,19 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { sendAuthMagicLinkEmail } from '@/lib/email/sendAuthMagicLink'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    const { allowed, remaining } = rateLimit(`login:${ip}`, 5, 60000)
+    if (!allowed) {
+      return Response.json(
+        { error: 'Too many attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      )
+    }
+
     const { email, password } = await request.json()
 
     if (!email) {

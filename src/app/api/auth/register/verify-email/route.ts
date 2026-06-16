@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    const { allowed, remaining } = rateLimit(`verify-email:${ip}`, 10, 60000)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': '60' } as HeadersInit }
+      )
+    }
+
     const { otp } = await request.json()
 
     if (!otp || otp.length !== 6) {
