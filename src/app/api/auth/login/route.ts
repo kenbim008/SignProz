@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { sendAuthMagicLinkEmail } from '@/lib/email/sendAuthMagicLink'
 import { rateLimit } from '@/lib/rate-limit'
+import { loginSchema } from '@/lib/validation'
 
 export async function POST(request: Request) {
   try {
@@ -14,11 +15,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const { email, password } = await request.json()
-
-    if (!email) {
-      return Response.json({ error: 'Email is required' }, { status: 400 })
+    const parsed = loginSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
     }
+    const { email, password } = parsed.data
 
     // If password provided, use password-based login
     if (password) {

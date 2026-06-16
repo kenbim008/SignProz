@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
 import { cookies } from 'next/headers'
 import { rateLimit } from '@/lib/rate-limit'
+import { registerStartSchema } from '@/lib/validation'
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -19,12 +20,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const { email, referralCode } = await request.json()
-
-    // Validation
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
+    const parsed = registerStartSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
     }
+    const { email, referralCode } = parsed.data
 
     // Check if user already exists
     const supabaseAdmin = createAdminClient()
