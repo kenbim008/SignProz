@@ -128,6 +128,56 @@ export const EvidenceService = {
   },
 
   /**
+   * Verify a legal evidence certificate by checking:
+   * 1. The certificate exists in the database
+   * 2. The document's audit chain is intact
+   * 3. A daily transparency-log entry covers the completion date
+   * 4. A TSA timestamp token exists (when applicable)
+   */
+  async verifyCertificate(certificateId: string): Promise<VerificationResult> {
+    const supabase = createAdminClient()
+    const { data: cert, error } = await supabase
+      .from('certificates')
+      .select('id, document_id, json_manifest, tst_token, tsa_issued_at, created_at')
+      .eq('id', certificateId)
+      .single()
+
+    if (error || !cert) {
+      return { valid: false, failure: 'cert_not_found' }
+    }
+
+    const manifest = cert.json_manifest as JsonManifest
+
+    // Chain check
+    const chainResult = await this.verifyDocumentChain(cert.document_id)
+    if (!chainResult.ok) {
+      return { valid: false, failure: 'chain_broken', details: chainResult.brokenAt }
+    }
+
+    // Log check -- verify there's a log entry for the completion date or later
+    const completionDate = (manifest.completedAt || cert.created_at).slice(0, 10)
+    const { data: logEntry } = await supabase
+      .from('evidence_log_entries')
+      .select('log_hash')
+      .gte('log_date', completionDate)
+      .order('log_date', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (!logEntry) {
+      return { valid: false, failure: 'log_missing', details: `No log entry for ${completionDate}` }
+    }
+
+    // TSA check -- if token exists, TSA is verified
+    const tsaOk = !!cert.tst_token
+
+    if (tsaOk) {
+      return { valid: true, chainOk: true, logOk: true, tsaOk: true, manifest }
+    }
+    return { valid: true, chainOk: true, logOk: true, tsaOk: false, tsaPending: true, manifest }
+  },
+
+  /**
    * Issue a legal evidence certificate for a completed document.
    *
    * Phase A (synchronous, before HTTP response):

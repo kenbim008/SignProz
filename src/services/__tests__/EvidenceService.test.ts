@@ -195,6 +195,108 @@ describe('EvidenceService.issueCertificate (Phase A)', () => {
   })
 })
 
+describe('EvidenceService.verifyCertificate', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+    mockRpc.mockReset()
+  })
+
+  it('returns valid: true with all checks passing', async () => {
+    let callCount = 0
+    mockFrom.mockImplementation((table: string) => {
+      callCount++
+      if (table === 'certificates') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'cert-1',
+              document_id: 'doc-1',
+              json_manifest: {
+                documentId: 'doc-1', documentTitle: 'Test', completedAt: '2026-06-16T12:00:00Z',
+                signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb',
+              },
+              tst_token: Buffer.alloc(10), tsa_issued_at: '2026-06-16T12:05:00Z', created_at: '2026-06-16T12:00:00Z',
+            },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'evidence_log_entries') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: { log_hash: Buffer.alloc(32, 9) }, error: null }),
+        }
+      }
+      throw new Error(`unexpected ${table} at #${callCount}`)
+    })
+
+    mockRpc.mockResolvedValue({ data: [{ ok: true }], error: null })
+
+    const r = await EvidenceService.verifyCertificate('cert-1')
+    expect(r.valid).toBe(true)
+    if (r.valid) {
+      expect(r.chainOk).toBe(true)
+      expect(r.logOk).toBe(true)
+      expect(r.tsaOk).toBe(true)
+    }
+  })
+
+  it('returns cert_not_found when the cert does not exist', async () => {
+    mockFrom.mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+    }))
+
+    const r = await EvidenceService.verifyCertificate('nonexistent')
+    expect(r.valid).toBe(false)
+    if (!r.valid) expect(r.failure).toBe('cert_not_found')
+  })
+
+  it('returns chain_broken when the chain fails verification', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'certificates') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'cert-1', document_id: 'doc-1',
+              json_manifest: { documentId: 'doc-1', documentTitle: 'T', completedAt: '2026-06-16T12:00:00Z', signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb' },
+              tst_token: null, tsa_issued_at: null, created_at: '2026-06-16T12:00:00Z',
+            },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'evidence_log_entries') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: { log_hash: Buffer.alloc(32, 9) }, error: null }),
+        }
+      }
+      return {} as any
+    })
+
+    mockRpc.mockResolvedValue({
+      data: [{ ok: false, broken_at: 'r1', expected_hash: 'aa', actual_hash: 'bb' }],
+      error: null,
+    })
+
+    const r = await EvidenceService.verifyCertificate('cert-1')
+    expect(r.valid).toBe(false)
+    if (!r.valid) expect(r.failure).toBe('chain_broken')
+  })
+})
+
 describe('EvidenceService.appendDailyLogEntry', () => {
   beforeEach(() => {
     mockFrom.mockReset()
