@@ -34,7 +34,7 @@ export async function requestTimestamp(opts: TsaRequestOptions): Promise<Buffer>
       const res = await fetch(tsaUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/timestamp-query' },
-        body: buildTimestampRequest(opts.documentHash),
+        body: new Uint8Array(buildTimestampRequest(opts.documentHash)),
       })
       if (!res.ok) {
         lastError = new TsaError(`TSA returned ${res.status}`)
