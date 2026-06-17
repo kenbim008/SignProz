@@ -93,7 +93,7 @@ npm run dev
 
 - Don't commit `.env*.local` files
 - Don't push directly to `main` (branch protection is on)
-- Don't skip CI by force-pushing
+- Don't force-push to rewrite review feedback history
 - Don't add a new logging library — use `src/lib/logger.ts` (added in D.1)
 - Don't add a new state library without a plan in the project tracker
 
