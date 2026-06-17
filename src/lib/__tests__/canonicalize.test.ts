@@ -43,4 +43,43 @@ describe('canonicalizeAuditRow', () => {
     const out = canonicalizeAuditRow({ created_at: d, action: 'foo' } as any)
     expect(out).toBe('{"action":"foo","created_at":"2026-06-16T12:00:00.000Z"}')
   })
+
+  it('floors ISO timestamps with microsecond precision to milliseconds', () => {
+    // Database timestamps may include microsecond digits beyond ms precision.
+    // SQL date_trunc('milliseconds', ...) floors them; JS must match.
+    const out = canonicalizeAuditRow({
+      created_at: '2026-06-16T12:00:00.000500Z',
+      action: 'sign',
+    } as any)
+    expect(out).toBe('{"action":"sign","created_at":"2026-06-16T12:00:00.000Z"}')
+  })
+
+  it('floors nested ISO timestamps in metadata', () => {
+    const out = canonicalizeAuditRow({
+      metadata: { signed_at: '2026-06-16T12:00:00.999800Z' },
+      action: 'sign',
+    } as any)
+    expect(out).toContain('"signed_at":"2026-06-16T12:00:00.999Z"')
+  })
+
+  it('leaves non-timestamp strings unchanged', () => {
+    const out = canonicalizeAuditRow({ email: 'alice@example.com', action: 'sign' } as any)
+    expect(out).toBe('{"action":"sign","email":"alice@example.com"}')
+  })
+
+  it('adds .000Z suffix to timestamps with no sub-second precision', () => {
+    const out = canonicalizeAuditRow({
+      created_at: '2026-06-16T12:00:00Z',
+      action: 'sign',
+    } as any)
+    expect(out).toBe('{"action":"sign","created_at":"2026-06-16T12:00:00.000Z"}')
+  })
+
+  it('Date instances produce same output as ISO string timestamps', () => {
+    // Date should produce the same canonical form as the corresponding ISO string
+    const d = new Date('2026-06-16T12:00:00.000Z')
+    const fromDate = canonicalizeAuditRow({ created_at: d, action: 'test' } as any)
+    const fromStr = canonicalizeAuditRow({ created_at: '2026-06-16T12:00:00.000Z', action: 'test' } as any)
+    expect(fromDate).toBe(fromStr)
+  })
 })
