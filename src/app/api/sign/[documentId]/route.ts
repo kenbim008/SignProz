@@ -17,7 +17,21 @@ export async function GET(request: Request, { params }: RouteParams) {
 
   try {
     const context = await SigningService.getSigningContext(documentId, token)
-    return NextResponse.json({ state: 'ready', ...context })
+
+    // Determine state — the client reads `state` to decide what to render
+    let state: string = 'ready'
+    if (context.document.status === 'completed') {
+      state = 'completed'
+    } else {
+      // Sequential signing: if any prior-order signer hasn't signed, this signer must wait
+      const sortedSigners = [...context.document.signers].sort((a, b) => a.order - b.order)
+      const firstUnsigned = sortedSigners.find((s) => !s.signed_at)
+      if (firstUnsigned && firstUnsigned.id !== context.signer.id) {
+        state = 'sequential_wait'
+      }
+    }
+
+    return NextResponse.json({ state, ...context })
   } catch (err) {
     if (isServiceError(err)) {
       // Map specific codes to the old `state` field shape so the client doesn't break
