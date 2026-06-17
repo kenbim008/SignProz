@@ -173,6 +173,13 @@ export const SigningService = {
       .single()
 
     if (result.documentStatus === 'completed') {
+      // Issue certificate of completion (fire-and-forget; cert failure doesn't fail the signing)
+      import('@/services/EvidenceService').then(({ EvidenceService }) => {
+        EvidenceService.issueCertificate(documentId, { skipTsa: true }).catch(err => {
+          logger.error('signing.cert_issue_failed', err, { documentId })
+        })
+      })
+
       // Send completion email to owner
       try {
         const { sendCompletionEmail } = await import('@/lib/email/sendCompletionEmail')
