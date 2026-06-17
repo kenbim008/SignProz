@@ -1,102 +1,83 @@
-import { createServerClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { addAuditLog } from '@/lib/utils'
+import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
+import { DocumentService, isServiceError, serviceErrorToStatus } from '@/services'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(_request: Request, { params }: RouteParams) {
   const { id } = await params
   const session = await getSession()
   if (!session) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = await createServerClient()
-  const { data, error } = await supabase
-    .from('documents')
-    .select('*, signers(*), signature_fields(*), audit_logs(*)')
-    .eq('id', id)
-    .eq('user_id', session.id)
-    .single()
-
-  if (error || !data) {
-    return Response.json({ error: 'Document not found' }, { status: 404 })
+  try {
+    const document = await DocumentService.get(id, session.id)
+    return NextResponse.json({ document })
+  } catch (err) {
+    if (isServiceError(err)) {
+      logger.warn('documents.get.rejected', { userId: session.id, documentId: id, code: err.code })
+      return NextResponse.json({ error: err.message }, { status: serviceErrorToStatus(err.code) })
+    }
+    logger.error('documents.get.error', err, { userId: session.id, documentId: id })
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-
-  return Response.json({ document: data })
 }
 
+// PUT is kept (backwards compat) — internally routes to DocumentService.update.
+// A PATCH alias is also exported so future callers can use the more standard verb.
 export async function PUT(request: Request, { params }: RouteParams) {
-  const { id } = await params
-  const session = await getSession()
-  if (!session) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const supabase = await createServerClient()
-  const supabaseAdmin = createAdminClient()
-
-  const { data: existing } = await supabase
-    .from('documents')
-    .select('status')
-    .eq('id', id)
-    .eq('user_id', session.id)
-    .single()
-
-  if (!existing) {
-    return Response.json({ error: 'Document not found' }, { status: 404 })
-  }
-
-  if (existing.status !== 'draft') {
-    return Response.json(
-      { error: 'Only draft documents can be updated' },
-      { status: 400 }
-    )
-  }
-
-  const { title, content, expiration_days } = await request.json()
-
-  const { data, error } = await supabaseAdmin
-    .from('documents')
-    .update({ title, content, expiration_days })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) {
-    return Response.json({ error: error.message }, { status: 400 })
-  }
-
-  await addAuditLog(supabaseAdmin, id, 'document.updated', session.email)
-
-  return Response.json({ document: data })
+  return handleUpdate(request, await params)
 }
 
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function PATCH(request: Request, { params }: RouteParams) {
+  return handleUpdate(request, await params)
+}
+
+async function handleUpdate(request: Request, { id }: { id: string }) {
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = (await request.json()) as {
+    title?: string
+    content?: string
+    expiration_days?: number
+  }
+
+  try {
+    const document = await DocumentService.update(id, session.id, body)
+    return NextResponse.json({ document })
+  } catch (err) {
+    if (isServiceError(err)) {
+      logger.warn('documents.update.rejected', { userId: session.id, documentId: id, code: err.code })
+      return NextResponse.json({ error: err.message }, { status: serviceErrorToStatus(err.code) })
+    }
+    logger.error('documents.update.error', err, { userId: session.id, documentId: id })
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(_request: Request, { params }: RouteParams) {
   const { id } = await params
   const session = await getSession()
   if (!session) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = await createServerClient()
-  const supabaseAdmin = createAdminClient()
-
-  const { data: existing } = await supabase
-    .from('documents')
-    .select('id')
-    .eq('id', id)
-    .eq('user_id', session.id)
-    .single()
-
-  if (!existing) {
-    return Response.json({ error: 'Document not found' }, { status: 404 })
+  try {
+    await DocumentService.delete(id, session.id)
+    return NextResponse.json({ message: 'Document deleted' })
+  } catch (err) {
+    if (isServiceError(err)) {
+      logger.warn('documents.delete.rejected', { userId: session.id, documentId: id, code: err.code })
+      return NextResponse.json({ error: err.message }, { status: serviceErrorToStatus(err.code) })
+    }
+    logger.error('documents.delete.error', err, { userId: session.id, documentId: id })
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-
-  await supabaseAdmin.from('documents').delete().eq('id', id)
-
-  return Response.json({ message: 'Document deleted' })
 }
