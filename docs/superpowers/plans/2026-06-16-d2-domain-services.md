@@ -149,7 +149,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 6. Apply each field value
+  -- 6. Apply each field value (with size and empty-string validation)
   FOR v_field IN SELECT * FROM jsonb_array_elements(p_field_values)
   LOOP
     v_field_id := (v_field->>'fieldId')::UUID;
@@ -163,14 +163,30 @@ BEGIN
       RAISE EXCEPTION 'INVALID_FIELD' USING ERRCODE = '23514';
     END IF;
 
+    -- Reject empty string values
+    IF jsonb_typeof(v_field_value) = 'string' AND v_field_value #>> '{}' = '' THEN
+      RAISE EXCEPTION 'EMPTY_FIELD' USING ERRCODE = '23514';
+    END IF;
+
+    -- Reject data:image/ payloads larger than 500KB
+    IF jsonb_typeof(v_field_value) = 'string' AND left(v_field_value #>> '{}', 11) = 'data:image/' THEN
+      IF length(v_field_value #>> '{}') > 700000 THEN  -- ~525KB base64
+        RAISE EXCEPTION 'SIGNATURE_TOO_LARGE' USING ERRCODE = '23514';
+      END IF;
+    END IF;
+
     UPDATE signature_fields SET filled_value = v_field_value, updated_at = NOW()
     WHERE id = v_field_id;
   END LOOP;
 
-  -- 7. Mark signer as signed
-  UPDATE signers SET signed_at = NOW() WHERE id = v_signer.id;
+  -- 7. Build signed_data and mark signer as signed (also set viewed_at if not yet)
+  UPDATE signers SET
+    signed_at = NOW(),
+    viewed_at = COALESCE(viewed_at, NOW()),
+    signed_data = p_field_values
+  WHERE id = v_signer.id;
 
-  -- 8. Audit log
+  -- 8. Audit log (signer_signed)
   INSERT INTO audit_logs (document_id, actor_email, action, metadata)
   VALUES (p_document_id, v_signer.email, 'signer_signed', jsonb_build_object(
     'signerId', v_signer.id,
@@ -187,15 +203,32 @@ BEGIN
   IF v_all_signed THEN
     UPDATE documents SET status = 'completed', completed_at = NOW() WHERE id = p_document_id;
     v_status := 'completed';
+
+    -- 10. Audit log (document_completed)
+    INSERT INTO audit_logs (document_id, actor_email, action, metadata)
+    VALUES (p_document_id, v_signer.email, 'document_completed', jsonb_build_object(
+      'signerId', v_signer.id,
+      'totalSigners', (SELECT COUNT(*) FROM signers WHERE document_id = p_document_id)
+    ));
   ELSE
     UPDATE documents SET status = 'partially_signed' WHERE id = p_document_id;
     v_status := 'partially_signed';
+
+    -- 11. Sequential mode: audit-log the next-signer trigger
+    -- (The JS service will then look up the next pending signer and email them.)
+    IF EXISTS (SELECT 1 FROM signers WHERE document_id = p_document_id AND "order" > 0) THEN
+      INSERT INTO audit_logs (document_id, actor_email, action, metadata)
+      VALUES (p_document_id, v_signer.email, 'signer_completed_sequential', jsonb_build_object(
+        'signerId', v_signer.id
+      ));
+    END IF;
   END IF;
 
   RETURN jsonb_build_object(
     'success', true,
     'documentStatus', v_status,
-    'signerId', v_signer.id
+    'signerId', v_signer.id,
+    'isSequential', EXISTS (SELECT 1 FROM signers WHERE document_id = p_document_id AND "order" > 0)
   );
 END;
 $$;
