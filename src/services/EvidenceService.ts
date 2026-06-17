@@ -17,6 +17,8 @@ import { ServiceError } from '@/services/errors'
 import { canonicalizeContent, canonicalizeAuditRow } from '@/lib/canonicalize'
 import { merkleRoot } from '@/lib/merkle'
 import { logger } from '@/lib/logger'
+import { put as blobPut } from '@vercel/blob'
+import { renderCertificatePdf } from '@/lib/pdf/certificate'
 
 export interface Certificate {
   id: string
@@ -123,6 +125,184 @@ export const EvidenceService = {
 
     if (error || !data) return null
     return mapCertificate(data)
+  },
+
+  /**
+   * Issue a legal evidence certificate for a completed document.
+   *
+   * Phase A (synchronous, before HTTP response):
+   * 1. Fetch the completed document (title, content, status check)
+   * 2. Verify the audit chain via verifyDocumentChain
+   * 3. Compute content hashes via hashContent
+   * 4. Fetch signers and audit rows
+   * 5. Compute chain root hash and merkle root
+   * 6. Build the JSON manifest
+   * 7. INSERT a certificates row
+   * 8. Render the PDF
+   * 9. Upload to Vercel Blob
+   * 10. UPDATE the cert row with pdf_storage_path
+   * 11. Fire-and-forget Phase B (TSA timestamp) if !options.skipTsa
+   *
+   * Phase B (fire-and-forget): requestAndStoreTimestamp
+   */
+  async issueCertificate(
+    documentId: string,
+    options: { skipTsa?: boolean } = {},
+  ): Promise<Certificate> {
+    const supabase = createAdminClient()
+
+    // Fetch the completed document
+    const { data: doc, error: docErr } = await supabase
+      .from('documents')
+      .select('id, title, user_id, content, status, completed_at')
+      .eq('id', documentId)
+      .single()
+
+    if (docErr || !doc) {
+      logger.error('evidence.issue.doc_fetch_failed', docErr, { documentId })
+      throw new ServiceError('INTERNAL', 'Failed to load document for cert')
+    }
+
+    if (doc.status !== 'completed') {
+      throw new ServiceError('CONFLICT', 'Document is not completed')
+    }
+
+    // Verify the chain before issuing
+    const chainResult = await this.verifyDocumentChain(documentId)
+    if (!chainResult.ok) {
+      logger.error('evidence.issue.chain_broken', null, {
+        documentId, brokenAt: chainResult.brokenAt,
+      })
+      throw new ServiceError('INTEGRITY_FAILURE', 'Audit chain is broken; cannot issue certificate')
+    }
+
+    // Compute content hashes
+    const contentHashAtSend = this.hashContent(doc.content)
+    const contentHashAtCompletion = this.hashContent(doc.content)
+
+    // Fetch signers
+    const { data: signers } = await supabase
+      .from('signers')
+      .select('id, email, name, signed_at')
+      .eq('document_id', documentId)
+
+    // Fetch the audit chain
+    const { data: auditRows } = await supabase
+      .from('audit_logs')
+      .select('id, action, actor_email, created_at, hash')
+      .eq('document_id', documentId)
+      .order('created_at', { ascending: true })
+
+    const chainHashes = (auditRows ?? []).map(r =>
+      r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash, 'hex')
+    ).filter(Boolean)
+    const merkleRootForDoc = this.merkleRootOfHashes(chainHashes)
+    const chainRootHash = chainHashes[chainHashes.length - 1] ?? Buffer.alloc(0)
+
+    // Build manifest
+    const manifest: JsonManifest = {
+      documentId: doc.id,
+      documentTitle: doc.title,
+      completedAt: doc.completed_at,
+      signers: (signers ?? []).map(s => ({
+        name: s.name, email: s.email, signedAt: s.signed_at,
+      })),
+      auditChain: (auditRows ?? []).map(r => ({
+        action: r.action,
+        actorEmail: r.actor_email,
+        createdAt: r.created_at,
+        hash: r.hash instanceof Buffer ? r.hash.toString('hex') : String(r.hash || ''),
+      })),
+      contentHashAtSend: contentHashAtSend.toString('hex'),
+      contentHashAtCompletion: contentHashAtCompletion.toString('hex'),
+    }
+
+    // Phase A.1: insert the cert row
+    const { data: certRow, error: insertErr } = await supabase
+      .from('certificates')
+      .insert({
+        document_id: doc.id,
+        content_hash_at_send: contentHashAtSend,
+        content_hash_at_completion: contentHashAtCompletion,
+        chain_root_hash: chainRootHash,
+        merkle_root_at_completion: merkleRootForDoc,
+        json_manifest: manifest,
+      })
+      .select('id, created_at')
+      .single()
+
+    if (insertErr || !certRow) {
+      logger.error('evidence.issue.cert_insert_failed', insertErr, { documentId })
+      throw new ServiceError('INTERNAL', 'Failed to insert certificate')
+    }
+
+    // Phase A.2: render the PDF
+    const createdAt = new Date(certRow.created_at)
+    const certForPdf: Certificate = {
+      id: certRow.id,
+      documentId: doc.id,
+      contentHashAtSend,
+      contentHashAtCompletion,
+      chainRootHash,
+      merkleRootAtCompletion: merkleRootForDoc,
+      pdfStoragePath: null,
+      tstToken: null,
+      createdAt,
+      tsaIssuedAt: null,
+    }
+    const pdfBytes = await renderCertificatePdf(certForPdf, manifest)
+
+    // Phase A.3: upload to Vercel Blob
+    let pdfPath: string
+    try {
+      const blob = await blobPut(`certificates/${certRow.id}.pdf`, pdfBytes, {
+        access: 'public',
+        contentType: 'application/pdf',
+      })
+      pdfPath = `certificates/${certRow.id}.pdf`
+      logger.info('evidence.issue.pdf_uploaded', { certificateId: certRow.id, url: blob.url })
+    } catch (err) {
+      logger.error('evidence.issue.blob_upload_failed', err, { certificateId: certRow.id })
+      throw new ServiceError('BLOB_UPLOAD_FAILED', 'Failed to upload certificate PDF')
+    }
+
+    // Phase A.4: update the cert row with the PDF path
+    await supabase
+      .from('certificates')
+      .update({ pdf_storage_path: pdfPath })
+      .eq('id', certRow.id)
+
+    // Phase B: TSA (fire-and-forget if !skipTsa)
+    if (!options.skipTsa) {
+      this.requestAndStoreTimestamp(certRow.id, contentHashAtCompletion).catch(err => {
+        logger.error('evidence.issue.phase_b_failed', err, { certificateId: certRow.id })
+      })
+    }
+
+    return {
+      ...certForPdf,
+      pdfStoragePath: pdfPath,
+    }
+  },
+
+  /**
+   * Phase B: Request an RFC 3161 timestamp from the TSA and store the
+   * token in the certificate row.
+   *
+   * Fire-and-forget from issueCertificate. Also callable independently
+   * by the hourly backfill cron (Task 17).
+   */
+  async requestAndStoreTimestamp(certificateId: string, documentHash: Buffer): Promise<void> {
+    const { requestTimestamp, DEFAULT_TSA_URL } = await import('@/lib/tsa/freetsa')
+    const token = await requestTimestamp({
+      documentHash,
+      tsaUrl: process.env.TSA_URL || DEFAULT_TSA_URL,
+    })
+    const supabase = createAdminClient()
+    await supabase
+      .from('certificates')
+      .update({ tst_token: token, tsa_issued_at: new Date().toISOString() })
+      .eq('id', certificateId)
   },
 }
 

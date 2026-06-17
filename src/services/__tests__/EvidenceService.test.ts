@@ -8,6 +8,9 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => mockSupabase,
 }))
 
+const mockBlobPut = vi.fn()
+vi.mock('@vercel/blob', () => ({ put: (...args: unknown[]) => mockBlobPut(...args) }))
+
 import { EvidenceService } from '@/services/EvidenceService'
 import { createHash } from 'node:crypto'
 
@@ -113,5 +116,81 @@ describe('EvidenceService.getCertificate', () => {
     expect(r!.documentId).toBe('doc-1')
     expect(r!.createdAt).toBeInstanceOf(Date)
     expect(r!.tsaIssuedAt).toBeNull()
+  })
+})
+
+describe('EvidenceService.issueCertificate (Phase A)', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+    mockRpc.mockReset()
+    mockBlobPut.mockReset()
+  })
+
+  it('inserts a cert row, generates a PDF, uploads to Blob, updates the row', async () => {
+    let callCount = 0
+    mockFrom.mockImplementation((table: string) => {
+      callCount++
+      if (table === 'documents') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: 'doc-1', title: 'Test', user_id: 'u-1', content: '<p>hello</p>', status: 'completed', completed_at: '2026-06-16T12:00:00Z' },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'signers') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: [{ id: 's-1', email: 'a@x.com', name: 'Alice', signed_at: '2026-06-16T11:55:00Z' }],
+            error: null,
+          }),
+        }
+      }
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({
+            data: [
+              { id: 'r1', action: 'document_created', actor_email: 'owner@x.com', metadata: {}, created_at: '2026-06-16T10:00:00Z', hash: Buffer.alloc(32, 1) },
+              { id: 'r2', action: 'document_completed', actor_email: 'owner@x.com', metadata: {}, created_at: '2026-06-16T12:00:00Z', hash: Buffer.alloc(32, 2) },
+            ],
+            error: null,
+          }),
+        }
+      }
+      if (table === 'certificates') {
+        if (callCount === 4) {
+          return {
+            insert: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'cert-1', created_at: '2026-06-16T12:00:00Z' },
+              error: null,
+            }),
+          }
+        }
+        if (callCount === 5) {
+          return {
+            update: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+      }
+      throw new Error(`unexpected table ${table} call #${callCount}`)
+    })
+
+    mockRpc.mockResolvedValue({ data: [{ ok: true }], error: null })
+    // Mock the blob upload
+    mockBlobPut.mockResolvedValue({ url: 'https://blob.vercel-test.dev/cert-1.pdf' })
+
+    const cert = await EvidenceService.issueCertificate('doc-1', { skipTsa: true })
+
+    expect(cert.id).toBe('cert-1')
+    expect(cert.pdfStoragePath).toBeTruthy()
+    expect(mockBlobPut).toHaveBeenCalledTimes(1)
   })
 })
