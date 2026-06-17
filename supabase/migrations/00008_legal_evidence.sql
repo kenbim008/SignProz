@@ -133,3 +133,12 @@ CREATE TRIGGER audit_logs_01_compute_hash
 -- Index for chain lookups
 CREATE INDEX IF NOT EXISTS idx_audit_logs_chain
   ON public.audit_logs (document_id, created_at, id);
+
+-- ═══════════════════════════════════════════════
+-- Part 2: documents content hashes
+-- ═══════════════════════════════════════════════
+
+ALTER TABLE public.documents
+  ADD COLUMN IF NOT EXISTS content_hash_at_send BYTEA,
+  ADD COLUMN IF NOT EXISTS content_hash_at_completion BYTEA,
+  ADD COLUMN IF NOT EXISTS completion_merkle_root BYTEA;
