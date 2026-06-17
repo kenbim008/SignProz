@@ -15,6 +15,9 @@ export type ServiceErrorCode =
   | 'TOKEN_EXPIRED'
   | 'SEQUENTIAL_ORDER'
   | 'INTERNAL'
+  | 'INTEGRITY_FAILURE' // NEW: audit chain verification failed
+  | 'BLOB_UPLOAD_FAILED' // NEW: Vercel Blob upload failed
+  | 'CERT_NOT_FOUND' // NEW: certificate ID unknown
 
 export class ServiceError extends Error {
   constructor(
@@ -33,8 +36,6 @@ export function isServiceError(err: unknown): err is ServiceError {
 
 export function serviceErrorToStatus(code: ServiceErrorCode): number {
   switch (code) {
-    case 'NOT_FOUND':
-      return 404
     case 'UNAUTHORIZED':
       return 401
     case 'FORBIDDEN':
@@ -48,6 +49,12 @@ export function serviceErrorToStatus(code: ServiceErrorCode): number {
     case 'SEQUENTIAL_ORDER':
       return 409
     case 'INTERNAL':
+    case 'INTEGRITY_FAILURE':
+    case 'BLOB_UPLOAD_FAILED':
+      return 500
+    case 'CERT_NOT_FOUND':
+    case 'NOT_FOUND':
+      return 404
     default:
       return 500
   }
