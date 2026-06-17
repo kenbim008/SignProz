@@ -87,3 +87,91 @@ describe('DocumentService.validateOwnership', () => {
     await expect(DocumentService.validateOwnership('d1', 'user-1')).rejects.toThrow(ServiceError)
   })
 })
+
+describe('DocumentService.create', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+  })
+
+  it('inserts a document, signers, and fields', async () => {
+    // Mock the document insert
+    const insertDocMock = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { id: 'new-doc' }, error: null }),
+    })
+    // Mock the signers insert (must support .select for id mapping)
+    const insertSignersMock = vi.fn().mockReturnValue({
+      select: vi.fn().mockResolvedValue({ data: [{ id: 's1', order: 0 }], error: null }),
+    })
+    // Mock the fields insert
+    const insertFieldsMock = vi.fn().mockResolvedValue({ error: null })
+    // Mock the audit log insert
+    const insertAuditMock = vi.fn().mockResolvedValue({ error: null })
+    // Mock final this.get() call
+    const getChainMock = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { id: 'new-doc', title: 'New Doc' },
+        error: null,
+      }),
+    }
+
+    let callCount = 0
+    mockFrom.mockImplementation(() => {
+      callCount++
+      if (callCount === 1) return { insert: insertDocMock } // document insert
+      if (callCount === 2) return { insert: insertSignersMock } // signers insert
+      if (callCount === 3) return { insert: insertFieldsMock } // fields insert
+      if (callCount === 4) return { insert: insertAuditMock } // audit log
+      return getChainMock // final this.get()
+    })
+
+    const result = await DocumentService.create('user-1', {
+      title: 'New Doc',
+      content: 'Body',
+      signers: [{ email: 's@x.com', name: 'S' }],
+      fields: [{ field_type: 'signature', position_x: 10, position_y: 20, signer_index: 0 }],
+    })
+
+    expect(result.id).toBe('new-doc')
+  })
+})
+
+describe('DocumentService.sendForSigning', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+  })
+
+  it('throws CONFLICT if document is not in draft status', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { user_id: 'user-1', status: 'completed' },
+        error: null,
+      }),
+    })
+
+    await expect(DocumentService.sendForSigning('d1', 'user-1')).rejects.toThrow(ServiceError)
+  })
+})
+
+describe('DocumentService.delete', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+  })
+
+  it('throws CONFLICT if document is not in draft status', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { user_id: 'user-1', status: 'sent' },
+        error: null,
+      }),
+    })
+
+    await expect(DocumentService.delete('d1', 'user-1')).rejects.toThrow(ServiceError)
+  })
+})
