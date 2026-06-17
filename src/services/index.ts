@@ -1,4 +1,5 @@
 export { DocumentService } from './DocumentService'
+export { EvidenceService } from './EvidenceService'
 export { SigningService } from './SigningService'
 export {
   ServiceError,
