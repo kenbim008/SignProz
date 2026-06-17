@@ -75,8 +75,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to start registration' }, { status: 500 })
     }
 
-    // Always log OTP for debugging (visible in dev server logs)
-    logger.info('dev registration otp', { email, otp })
+    // Log OTP only in development — never write a real OTP to production logs
+    if (process.env.NODE_ENV === 'development') {
+      logger.info('dev registration otp', { email, otp })
+    }
 
     // Send OTP via Resend (non-blocking — don't fail registration if email fails)
     const resendApiKey = process.env.RESEND_API_KEY

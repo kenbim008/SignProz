@@ -57,7 +57,9 @@ export async function POST() {
       })
       .eq('id', sessionId)
 
-    logger.info('dev phone otp', { email: regSession.email, phone: regSession.phone, otp })
+    if (process.env.NODE_ENV === 'development') {
+      logger.info('dev phone otp', { email: regSession.email, phone: regSession.phone, otp })
+    }
 
     return NextResponse.json({
       success: true,
