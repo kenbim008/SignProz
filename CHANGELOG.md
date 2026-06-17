@@ -14,6 +14,10 @@ All notable changes to SignProz are documented here. The format is based on [Kee
 - Removed false marketing claims about HIPAA, 400+ integrations, Microsoft 365
 - Removed mock Stripe payout UI (replaced with "Coming Soon")
 - Resolved schema drift: `profiles.email` populated via trigger, field types expanded
+- API routes refactored to use a transactional service layer (`DocumentService`, `SigningService`); the signing workflow now runs as a single atomic PL/pgSQL function call
+
+### Added
+- `sign_document()` and `with_transaction()` PL/pgSQL functions (migration `00007`) for atomic multi-statement workflows
 
 ## [0.1.0] - 2026-06-16
 
