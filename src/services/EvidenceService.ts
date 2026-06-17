@@ -304,6 +304,90 @@ export const EvidenceService = {
       .update({ tst_token: token, tsa_issued_at: new Date().toISOString() })
       .eq('id', certificateId)
   },
+
+  /**
+   * Append a daily Merkle root entry to the self-hosted transparency log.
+   * Idempotent: if an entry already exists for `date`, returns it instead of inserting.
+   */
+  async appendDailyLogEntry(date: Date): Promise<void> {
+    const supabase = createAdminClient()
+    const dateStr = date.toISOString().slice(0, 10)
+    const dayStart = new Date(dateStr + 'T00:00:00Z')
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+
+    // Check if entry already exists (idempotency)
+    const { data: existing } = await supabase
+      .from('evidence_log_entries')
+      .select('id')
+      .eq('log_date', dateStr)
+      .maybeSingle()
+
+    if (existing) {
+      logger.info('evidence.daily_log.skip_exists', { logDate: dateStr })
+      return
+    }
+
+    // Fetch all audit entries for the day
+    const { data: rows, error: rowsErr } = await supabase
+      .from('audit_logs')
+      .select('hash')
+      .gte('created_at', dayStart.toISOString())
+      .lt('created_at', dayEnd.toISOString())
+
+    if (rowsErr) {
+      logger.error('evidence.daily_log.audit_fetch_failed', rowsErr, { logDate: dateStr })
+      throw new ServiceError('INTERNAL', 'Failed to fetch audit entries for daily log')
+    }
+
+    const leaves = (rows ?? [])
+      .map(r => r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash, 'hex'))
+      .filter(b => b && b.length === 32)
+
+    const merkleRootForDay = this.merkleRootOfHashes(leaves)
+
+    // Fetch previous log entry
+    const { data: prevEntry } = await supabase
+      .from('evidence_log_entries')
+      .select('log_hash')
+      .order('log_date', { ascending: false })
+      .limit(1)
+      .single()
+
+    const prevLogHash = prevEntry?.log_hash instanceof Buffer
+      ? prevEntry.log_hash
+      : prevEntry?.log_hash
+        ? Buffer.from(prevEntry.log_hash, 'hex')
+        : null
+
+    // Compute log_hash = SHA-256(prev_log_hash || merkle_root || entry_count || log_date)
+    const logHash = createHash('sha256')
+    if (prevLogHash) logHash.update(prevLogHash)
+    logHash.update(merkleRootForDay)
+    const entryCountBuf = Buffer.alloc(4)
+    entryCountBuf.writeUInt32BE(leaves.length)
+    logHash.update(entryCountBuf)
+    logHash.update(dateStr, 'utf8')
+    const finalLogHash = logHash.digest()
+
+    const { error: insertErr } = await supabase
+      .from('evidence_log_entries')
+      .insert({
+        log_date: dateStr,
+        merkle_root: merkleRootForDay,
+        entry_count: leaves.length,
+        prev_log_hash: prevLogHash,
+        log_hash: finalLogHash,
+      })
+
+    if (insertErr) {
+      logger.error('evidence.daily_log.insert_failed', insertErr, { logDate: dateStr })
+      throw new ServiceError('INTERNAL', 'Failed to insert daily log entry')
+    }
+
+    logger.info('evidence.daily_log.appended', {
+      logDate: dateStr, entryCount: leaves.length,
+    })
+  },
 }
 
 function mapCertificate(row: Record<string, unknown>): Certificate {

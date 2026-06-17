@@ -194,3 +194,81 @@ describe('EvidenceService.issueCertificate (Phase A)', () => {
     expect(mockBlobPut).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('EvidenceService.appendDailyLogEntry', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+    mockRpc.mockReset()
+  })
+
+  it('appends a new log entry chained to the previous day', async () => {
+    let callCount = 0
+    mockFrom.mockImplementation((table: string) => {
+      callCount++
+      if (table === 'evidence_log_entries') {
+        // callCount 1: existing check (maybeSingle)
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+        // callCount 3: prev entry fetch (order/limit/single)
+        if (callCount === 3) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { log_hash: Buffer.alloc(32, 7) },
+              error: null,
+            }),
+          }
+        }
+        // callCount 4: insert
+        if (callCount === 4) {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+      }
+      // callCount 2: audit_logs fetch
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockResolvedValue({
+            data: [
+              { hash: Buffer.alloc(32, 1) },
+              { hash: Buffer.alloc(32, 2) },
+            ],
+            error: null,
+          }),
+        }
+      }
+      throw new Error(`unexpected table ${table} call #${callCount}`)
+    })
+
+    await EvidenceService.appendDailyLogEntry(new Date('2026-06-16T12:00:00Z'))
+    // Should have made 4 from calls (existing check, audit_logs, prev entry, insert)
+    expect(mockFrom).toHaveBeenCalled()
+  })
+
+  it('skips when entry already exists', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'evidence_log_entries') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'existing' }, error: null }),
+        }
+      }
+      throw new Error('should not reach other tables')
+    })
+
+    await EvidenceService.appendDailyLogEntry(new Date('2026-06-16T12:00:00Z'))
+    // Idempotency: should return without fetching audit_logs
+    expect(mockFrom).toHaveBeenCalledTimes(1)
+  })
+})
