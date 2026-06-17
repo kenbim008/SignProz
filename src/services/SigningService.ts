@@ -20,11 +20,20 @@ export interface SigningContext {
     id: string
     title: string
     status: string
+    content: string | null
+    signers: Array<{
+      id: string
+      email: string
+      name: string | null
+      order: number
+      signed_at: string | null
+    }>
   }
   signer: {
     id: string
     email: string
     name: string | null
+    signed_at: string | null
   }
   fields: Array<{
     id: string
@@ -34,6 +43,7 @@ export interface SigningContext {
     width: number
     height: number
     is_required: boolean
+    signer_id: string | null
   }>
 }
 
@@ -96,7 +106,7 @@ export const SigningService = {
 
     const { data: document, error: docError } = await supabase
       .from('documents')
-      .select('id, title, status')
+      .select('id, title, status, content, signers(id, email, name, order, signed_at)')
       .eq('id', documentId)
       .single()
 
@@ -106,8 +116,8 @@ export const SigningService = {
 
     const { data: fields, error: fieldsError } = await supabase
       .from('signature_fields')
-      .select('id, field_type, position_x, position_y, width, height, is_required')
-      .eq('signer_id', signer.id)
+      .select('id, field_type, position_x, position_y, width, height, is_required, signer_id')
+      .eq('document_id', documentId)
 
     if (fieldsError) {
       logger.error('signing.context.fields_load_failed', fieldsError, { documentId })
@@ -115,8 +125,14 @@ export const SigningService = {
     }
 
     return {
-      document: { id: document.id, title: document.title, status: document.status },
-      signer: { id: signer.id, email: signer.email, name: signer.name },
+      document: {
+        id: document.id,
+        title: document.title,
+        status: document.status,
+        content: document.content ?? null,
+        signers: (document.signers ?? []) as SigningContext['document']['signers'],
+      },
+      signer: { id: signer.id, email: signer.email, name: signer.name, signed_at: signer.signed_at },
       fields: (fields ?? []) as SigningContext['fields'],
     }
   },
