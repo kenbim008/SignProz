@@ -15,8 +15,8 @@ export async function POST(_request: Request, { params }: RouteParams) {
   }
 
   try {
-    const document = await DocumentService.sendForSigning(id, session.id)
-    return NextResponse.json({ document })
+    const result = await DocumentService.sendForSigning(id, session.id)
+    return NextResponse.json(result)
   } catch (err) {
     if (isServiceError(err)) {
       logger.warn('documents.send.rejected', { userId: session.id, documentId: id, code: err.code })

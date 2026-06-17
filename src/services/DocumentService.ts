@@ -298,8 +298,18 @@ export const DocumentService = {
    * Send a document for signing. Generates magic tokens, transitions to 'sent',
    * and triggers magic-link emails. Throws CONFLICT if not in draft status.
    * Sends to the first signer only for sequential mode, all signers for parallel.
+   * Returns the document plus the email results so the caller can surface
+   * partial failures.
    */
-  async sendForSigning(documentId: string, userId: string): Promise<Document> {
+  async sendForSigning(
+    documentId: string,
+    userId: string,
+  ): Promise<{
+    document: Document
+    emails_sent: string[]
+    sequential: boolean
+    partial_errors: Array<{ email: string; error: string }>
+  }> {
     const doc = await this.validateOwnership(documentId, userId, { requireMutable: true })
 
     const supabase = createAdminClient()
@@ -335,9 +345,12 @@ export const DocumentService = {
       ? [...signers].sort((a, b) => a.order - b.order).slice(0, 1)
       : signers
 
-    // Generate tokens + update signers
+    // Generate tokens + update signers + send emails
     const expiry = new Date()
     expiry.setDate(expiry.getDate() + doc.expiration_days)
+
+    const emailsSent: string[] = []
+    const partialErrors: Array<{ email: string; error: string }> = []
 
     for (const signer of signers) {
       const magicToken = crypto.randomUUID()
@@ -354,7 +367,7 @@ export const DocumentService = {
         throw new ServiceError('INTERNAL', 'Failed to generate signing tokens')
       }
 
-      // Send the magic link email (only to the right signers; non-blocking; logged on failure)
+      // Send the magic link email (only to the right signers; failures are tracked, not thrown)
       if (signersToEmail.some((s) => s.id === signer.id)) {
         try {
           const { sendMagicLinkEmail } = await import('@/lib/email/sendMagicLink')
@@ -363,11 +376,20 @@ export const DocumentService = {
             { id: doc.id, title: doc.title, expiration_days: doc.expiration_days },
             userId,
           )
+          emailsSent.push(signer.email)
         } catch (emailErr) {
           logger.error('send_for_signing.email_failed', emailErr, { documentId, signerId: signer.id })
-          // Don't fail the whole operation for an email failure
+          partialErrors.push({
+            email: signer.email,
+            error: emailErr instanceof Error ? emailErr.message : 'Failed to send email',
+          })
         }
       }
+    }
+
+    // If ALL emails failed, return 500 — no point marking the document as sent
+    if (signersToEmail.length > 0 && emailsSent.length === 0) {
+      throw new ServiceError('INTERNAL', 'Failed to send emails to all signers. Please try again.')
     }
 
     // Update document status
@@ -384,9 +406,12 @@ export const DocumentService = {
     await addAuditLog(supabase, documentId, 'document_sent', undefined, {
       signersCount: signers.length,
       sequential,
+      emailsSent: emailsSent.length,
+      partialErrors: partialErrors.length,
     })
 
-    return (await this.get(documentId, userId)) as unknown as Document
+    const document = (await this.get(documentId, userId)) as unknown as Document
+    return { document, emails_sent: emailsSent, sequential, partial_errors: partialErrors }
   },
 
   /**
