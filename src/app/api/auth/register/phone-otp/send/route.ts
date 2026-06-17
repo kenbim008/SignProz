@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -56,14 +57,14 @@ export async function POST() {
       })
       .eq('id', sessionId)
 
-    console.log(`[DEV] Phone OTP for ${regSession.email} (${regSession.phone}): ${otp}`)
+    logger.info('dev phone otp', { email: regSession.email, phone: regSession.phone, otp })
 
     return NextResponse.json({
       success: true,
       devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
     })
   } catch (error) {
-    console.error('Send phone OTP error:', error)
+    logger.error('send phone otp error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

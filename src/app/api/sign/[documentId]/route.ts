@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ documentId: string }>
@@ -91,7 +92,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       fields: fields || [],
     })
   } catch (error) {
-    console.error('Sign data error:', error)
+    logger.error('sign data error', error, { documentId: (await params).documentId })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

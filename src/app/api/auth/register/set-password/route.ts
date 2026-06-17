@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createServerClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: Request) {
   try {
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    console.error('Set password error:', error)
+    logger.error('set password error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

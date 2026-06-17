@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isTokenExpired, addAuditLog, isSequentialSigning } from '@/lib/utils'
 import { sendMagicLinkEmail, sendCompletionEmail } from '@/lib/email'
 import type { SignRequestBody } from '@/lib/types'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -292,7 +293,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     return Response.json({ success: true, message: 'Signature submitted' })
   } catch (error) {
-    console.error('Sign error:', error)
+    logger.error('sign error', error, { documentId: (await params).id })
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

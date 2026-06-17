@@ -5,6 +5,7 @@ import { addAuditLog } from '@/lib/utils'
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { createDocumentSchema } from '@/lib/validation'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: Request) {
   const session = await getSession()
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createServerClient()
+  const start = Date.now()
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1', 10)
   const limit = parseInt(searchParams.get('limit') || '20', 10)
@@ -34,9 +36,11 @@ export async function GET(request: Request) {
   const { data, error, count } = await query
 
   if (error) {
+    logger.error('documents list error', error, { userId: session.id })
     return Response.json({ error: error.message }, { status: 500 })
   }
 
+  logger.info('documents listed', { userId: session.id, count: data?.length ?? 0, durationMs: Date.now() - start })
   return NextResponse.json({ documents: data, total: count, page, limit })
 }
 

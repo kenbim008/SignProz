@@ -4,6 +4,7 @@ import { Resend } from 'resend'
 import { cookies } from 'next/headers'
 import { rateLimit } from '@/lib/rate-limit'
 import { registerStartSchema } from '@/lib/validation'
+import { logger } from '@/lib/logger'
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -70,12 +71,12 @@ export async function POST(request: Request) {
       .single()
 
     if (sessionError || !session) {
-      console.error('Session creation error:', JSON.stringify(sessionError))
+      logger.error('session creation error', sessionError, { email })
       return NextResponse.json({ error: 'Failed to start registration' }, { status: 500 })
     }
 
     // Always log OTP for debugging (visible in dev server logs)
-    console.log(`[DEV] Registration OTP for ${email}: ${otp}`)
+    logger.info('dev registration otp', { email, otp })
 
     // Send OTP via Resend (non-blocking — don't fail registration if email fails)
     const resendApiKey = process.env.RESEND_API_KEY
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
   <p style="color: #94a3b8; font-size: 12px; text-align: center;">This code expires in 10 minutes.</p>
 </body>
 </html>`,
-      }).catch((e: unknown) => console.error('Resend error (non-blocking):', e))
+      }).catch((e: unknown) => logger.error('resend error (non-blocking)', e, { email }))
     }
 
     // Set registration session cookie
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    console.error('Register start error:', error)
+    logger.error('register start error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

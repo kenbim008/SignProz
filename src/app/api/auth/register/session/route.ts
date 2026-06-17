@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -24,7 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ session })
   } catch (error) {
-    console.error('GET session error:', error)
+    logger.error('get registration session error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -59,13 +60,13 @@ export async function PUT(request: Request) {
       .single()
 
     if (error || !session) {
-      console.error('Session update error:', error)
+      logger.error('registration session update error', error)
       return NextResponse.json({ error: 'Failed to update session' }, { status: 500 })
     }
 
     return NextResponse.json({ session })
   } catch (error) {
-    console.error('PUT session error:', error)
+    logger.error('put registration session error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

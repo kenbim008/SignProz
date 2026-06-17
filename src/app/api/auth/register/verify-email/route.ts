@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: Request) {
   try {
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     })
 
     if (signUpError || !authData.user) {
-      console.error('User creation error:', signUpError)
+      logger.error('user creation error', signUpError, { email: session.email })
       return NextResponse.json({ error: 'Failed to create account' }, { status: 500 })
     }
 
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, userId: authData.user.id })
   } catch (error) {
-    console.error('Verify email error:', error)
+    logger.error('verify email error', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
