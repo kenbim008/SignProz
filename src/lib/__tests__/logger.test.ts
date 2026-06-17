@@ -39,6 +39,7 @@ describe('logger', () => {
     const errSpy = vi.spyOn(console, 'warn')
     logger.warn('rate limit hit', { ip: '1.2.3.4' })
 
+    expect(consoleSpy).not.toHaveBeenCalled()
     const arg = errSpy.mock.calls[0][0]
     const parsed = JSON.parse(arg)
     expect(parsed.level).toBe('warn')
@@ -50,10 +51,30 @@ describe('logger', () => {
     const err = new Error('db connection failed')
     logger.error('query failed', err)
 
+    expect(consoleSpy).not.toHaveBeenCalled()
     const arg = errSpy.mock.calls[0][0]
     const parsed = JSON.parse(arg)
     expect(parsed.level).toBe('error')
     expect(parsed.error).toBe('db connection failed')
     expect(parsed.stack).toContain('Error: db connection failed')
+  })
+
+  it('emits error level with meta when an Error and meta are passed', () => {
+    const errSpy = vi.spyOn(console, 'error')
+    const err = new Error('query failed')
+    logger.error('query failed', { userId: 'abc' }, err)
+
+    const arg = errSpy.mock.calls[0][0]
+    const parsed = JSON.parse(arg)
+    expect(parsed.level).toBe('error')
+    expect(parsed.userId).toBe('abc')
+    expect(parsed.error).toBe('query failed')
+  })
+
+  it('does not crash on circular references in meta', () => {
+    const circular: Record<string, unknown> = { name: 'self' }
+    circular.self = circular
+
+    expect(() => logger.info('circular', circular)).not.toThrow()
   })
 })
