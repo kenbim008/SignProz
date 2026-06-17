@@ -10,7 +10,9 @@ DROP FUNCTION IF EXISTS public.with_transaction(TEXT);
 
 -- Function 1: sign_document
 -- Atomically signs a document as a specific signer. Validates token, expiry,
--- sequential order, and updates fields + signer + document status in one transaction.
+-- sequential order, per-field constraints, and updates fields + signer +
+-- document status in one transaction. Also writes audit logs for the
+-- signer_signed and (if applicable) document_completed events.
 CREATE OR REPLACE FUNCTION public.sign_document(
   p_document_id UUID,
   p_magic_token TEXT,
@@ -25,9 +27,11 @@ DECLARE
   v_field JSONB;
   v_field_id UUID;
   v_field_value JSONB;
+  v_field_str TEXT;
   v_all_signed BOOLEAN;
   v_remaining INTEGER;
   v_status TEXT;
+  v_sequential BOOLEAN;
 BEGIN
   -- 1. Look up the signer (must match both document and token)
   SELECT * INTO v_signer FROM signers
@@ -67,7 +71,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 6. Apply each field value
+  -- 6. Apply each field value (with size and empty-string validation)
   FOR v_field IN SELECT * FROM jsonb_array_elements(p_field_values)
   LOOP
     v_field_id := (v_field->>'fieldId')::UUID;
@@ -81,21 +85,42 @@ BEGIN
       RAISE EXCEPTION 'INVALID_FIELD' USING ERRCODE = '23514';
     END IF;
 
+    -- Reject empty string values
+    IF jsonb_typeof(v_field_value) = 'string' THEN
+      v_field_str := v_field_value #>> '{}';
+      IF v_field_str = '' THEN
+        RAISE EXCEPTION 'EMPTY_FIELD' USING ERRCODE = '23514';
+      END IF;
+      -- Reject data:image/ payloads larger than ~525KB base64 (~500KB binary)
+      IF left(v_field_str, 11) = 'data:image/' AND length(v_field_str) > 700000 THEN
+        RAISE EXCEPTION 'SIGNATURE_TOO_LARGE' USING ERRCODE = '23514';
+      END IF;
+    END IF;
+
     UPDATE signature_fields SET filled_value = v_field_value, updated_at = NOW()
     WHERE id = v_field_id;
   END LOOP;
 
-  -- 7. Mark signer as signed
-  UPDATE signers SET signed_at = NOW() WHERE id = v_signer.id;
+  -- 7. Mark signer as signed; set viewed_at if not yet; persist signed_data JSON
+  UPDATE signers SET
+    signed_at = NOW(),
+    viewed_at = COALESCE(viewed_at, NOW()),
+    signed_data = p_field_values
+  WHERE id = v_signer.id;
 
-  -- 8. Audit log
+  -- 8. Audit log (signer_signed)
   INSERT INTO audit_logs (document_id, actor_email, action, metadata)
   VALUES (p_document_id, v_signer.email, 'signer_signed', jsonb_build_object(
     'signerId', v_signer.id,
     'fieldsCount', jsonb_array_length(p_field_values)
   ));
 
-  -- 9. Check if document is now complete
+  -- 9. Determine if document has any sequential signer
+  SELECT EXISTS (
+    SELECT 1 FROM signers WHERE document_id = p_document_id AND "order" > 0
+  ) INTO v_sequential;
+
+  -- 10. Check if document is now complete
   SELECT COUNT(*) INTO v_remaining
   FROM signers
   WHERE document_id = p_document_id AND signed_at IS NULL;
@@ -105,15 +130,29 @@ BEGIN
   IF v_all_signed THEN
     UPDATE documents SET status = 'completed', completed_at = NOW() WHERE id = p_document_id;
     v_status := 'completed';
+
+    INSERT INTO audit_logs (document_id, actor_email, action, metadata)
+    VALUES (p_document_id, v_signer.email, 'document_completed', jsonb_build_object(
+      'signerId', v_signer.id,
+      'totalSigners', (SELECT COUNT(*) FROM signers WHERE document_id = p_document_id)
+    ));
   ELSE
     UPDATE documents SET status = 'partially_signed' WHERE id = p_document_id;
     v_status := 'partially_signed';
+
+    IF v_sequential THEN
+      INSERT INTO audit_logs (document_id, actor_email, action, metadata)
+      VALUES (p_document_id, v_signer.email, 'signer_completed_sequential', jsonb_build_object(
+        'signerId', v_signer.id
+      ));
+    END IF;
   END IF;
 
   RETURN jsonb_build_object(
     'success', true,
     'documentStatus', v_status,
-    'signerId', v_signer.id
+    'signerId', v_signer.id,
+    'isSequential', v_sequential
   );
 END;
 $$;
