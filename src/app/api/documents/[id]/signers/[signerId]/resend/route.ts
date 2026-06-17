@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { DocumentService, isServiceError, serviceErrorToStatus } from '@/services'
-import { logger } from '@/lib/logger'
+import { DocumentService } from '@/services'
+import { apiErrorResponse, apiError500, apiUnauthorized } from '@/lib/api-errors'
 
 interface RouteParams {
   params: Promise<{ id: string; signerId: string }>
@@ -11,18 +11,16 @@ export async function POST(_request: Request, { params }: RouteParams) {
   const { id: documentId, signerId } = await params
   const session = await getSession()
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return apiUnauthorized()
   }
 
   try {
     await DocumentService.resendSignerInvite(documentId, session.id, signerId)
     return NextResponse.json({ success: true, message: 'Magic link resent successfully' })
   } catch (err) {
-    if (isServiceError(err)) {
-      logger.warn('resend.rejected', { userId: session.id, documentId, signerId, code: err.code })
-      return NextResponse.json({ error: err.message }, { status: serviceErrorToStatus(err.code) })
-    }
-    logger.error('resend.error', err, { userId: session.id, documentId, signerId })
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return (
+      apiErrorResponse(err, { endpoint: 'resend', userId: session.id, documentId, signerId }, { forbidToNotFound: true }) ??
+      apiError500(err, { endpoint: 'resend', userId: session.id, documentId, signerId })
+    )
   }
 }
