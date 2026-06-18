@@ -19,6 +19,7 @@ All notable changes to SignProz are documented here. The format is based on [Kee
 ### Added
 - `sign_document()` and `with_transaction()` PL/pgSQL functions (migration `00007`) for atomic multi-statement workflows
 - `src/lib/api-errors.ts` helper: `apiErrorResponse()`, `apiError500()`, `apiUnauthorized()` — centralizes ServiceError → NextResponse mapping and remaps `FORBIDDEN` to `404` on document-scoped routes to prevent existence-vs-ownership info leak
+- Legal evidence model (D.3): four-layer integrity — hash chain on `audit_logs`, content hashes on `documents`, per-document RFC 3161 timestamps, daily Merkle root in a self-hosted transparency log. New `EvidenceService` owns hashing, certificate issuance, and verification. New `/verify/[id]` public page lets anyone with a cert ID verify a document's chain. Daily Vercel Cron appends to the transparency log; hourly Cron backfills any missing TSA tokens.
 
 ### Fixed
 - Information leak on `/documents/[id]/*` routes: a 403 vs 404 distinction was letting attackers probe whether a document exists by another user. The owner-authenticated document routes (`GET/PUT/PATCH/DELETE /documents/[id]`, `POST /documents/[id]/send`, `POST /documents/[id]/signers/[signerId]/resend`) now return 404 with a generic "Document not found" message when the requester doesn't own the document. The signing flow is intentionally NOT remapped — the signer is a different actor and the existence info is part of the public token UX.

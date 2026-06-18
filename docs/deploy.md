@@ -1,6 +1,6 @@
 # Deploy Runbook
 
-This document is the source of truth for shipping code to production. Follow these steps in order. **Do not skip the database migration step** — the code requires migrations `00004`, `00005`, and `00007` to be applied first.
+This document is the source of truth for shipping code to production. Follow these steps in order. **Do not skip the database migration step** — the code requires migrations `00004`, `00005`, `00007`, and `00008` to be applied first.
 
 ## Pre-deploy checklist
 
