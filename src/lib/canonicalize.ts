@@ -23,7 +23,11 @@ export function canonicalizeContent(content: string | null | undefined): string 
  * - Must match PL/pgSQL canonical_audit_json
  */
 export function canonicalizeAuditRow(row: Record<string, unknown>): string {
-  const { prev_hash, hash, ...data } = row
+  // Strip chain pointer fields AND the generated `chain_key` column.
+  // PL/pgSQL `canonical_audit_json` excludes the same three (prev_hash,
+  // hash, chain_key); excluding only the first two here would cause JS
+  // and SQL to produce different canonical strings for the same row.
+  const { prev_hash, hash, chain_key, ...data } = row
   return stableStringify(floorTimestamps(data))
 }
 

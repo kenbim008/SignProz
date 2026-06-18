@@ -82,4 +82,31 @@ describe('canonicalizeAuditRow', () => {
     const fromStr = canonicalizeAuditRow({ created_at: '2026-06-16T12:00:00.000Z', action: 'test' } as any)
     expect(fromDate).toBe(fromStr)
   })
+
+  it('omits chain_key (F3.4): row with chain_key matches row without (matches PL/pgSQL canonical_audit_json)', () => {
+    // The audit_logs.chain_key column is GENERATED ALWAYS AS (document_id::text)
+    // STORED. PL/pgSQL canonical_audit_json strips it (along with prev_hash/hash);
+    // JS must do the same so both layers produce the same canonical string for
+    // the same logical row. Without this fix, JS and SQL would diverge for
+    // every row that gets re-read with the generated column populated.
+    const withChainKey = canonicalizeAuditRow({
+      id: 'row-1',
+      document_id: 'doc-1',
+      action: 'document_created',
+      actor_email: 'a@x.com',
+      created_at: '2026-06-16T12:00:00.000Z',
+      chain_key: 'doc-1',
+      prev_hash: null,
+      hash: null,
+    } as any)
+    const withoutChainKey = canonicalizeAuditRow({
+      id: 'row-1',
+      document_id: 'doc-1',
+      action: 'document_created',
+      actor_email: 'a@x.com',
+      created_at: '2026-06-16T12:00:00.000Z',
+    } as any)
+    expect(withChainKey).toBe(withoutChainKey)
+    expect(withChainKey).not.toContain('chain_key')
+  })
 })
