@@ -1,17 +1,7 @@
 import { NextResponse } from 'next/server'
-import { timingSafeEqual } from 'node:crypto'
 import { EvidenceService } from '@/services'
 import { logger } from '@/lib/logger'
-
-function isAuthorized(req: Request): boolean {
-  const auth = req.headers.get('authorization')
-  const expected = `Bearer ${process.env.CRON_SECRET}`
-  if (!auth || !process.env.CRON_SECRET) return false
-  const a = Buffer.from(auth)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length) return false
-  return timingSafeEqual(a, b)
-}
+import { isAuthorized } from '@/lib/cron'
 
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
