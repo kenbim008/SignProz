@@ -113,6 +113,24 @@ export const EvidenceService = {
   },
 
   /**
+   * Look up a certificate by its primary key (cert id). Used by the
+   * public verify page, which has the cert id from the URL but not the
+   * document id. `getCertificate` looks up by `document_id` -- not what
+   * the verify page needs.
+   */
+  async getCertificateById(certificateId: string): Promise<Certificate | null> {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('id', certificateId)
+      .single()
+
+    if (error || !data) return null
+    return mapCertificate(data)
+  },
+
+  /**
    * Verify a legal evidence certificate by checking:
    * 1. The certificate exists in the database
    * 2. The document's audit chain is intact
@@ -124,20 +142,28 @@ export const EvidenceService = {
    */
   async verifyCertificate(certificateId: string): Promise<VerificationResult> {
     const supabase = createAdminClient()
-    const { data: cert, error } = await supabase
-      .from('certificates')
-      .select('id, document_id, json_manifest, tst_token, tsa_issued_at, created_at')
-      .eq('id', certificateId)
-      .single()
+    const cert = await this.getCertificateById(certificateId)
 
-    if (error || !cert) {
+    if (!cert) {
       return { valid: false, failure: 'cert_not_found' }
     }
 
-    const manifest = cert.json_manifest as JsonManifest
+    // The full Certificate doesn't carry the JSON manifest; read it
+    // explicitly. (The manifest column is large JSONB and isn't on the
+    // typed Certificate interface.)
+    const { data: manifestRow, error: manifestErr } = await supabase
+      .from('certificates')
+      .select('json_manifest')
+      .eq('id', certificateId)
+      .single()
+
+    if (manifestErr || !manifestRow) {
+      return { valid: false, failure: 'cert_not_found' }
+    }
+    const manifest = manifestRow.json_manifest as JsonManifest
 
     // Chain check
-    const chainResult = await this.verifyDocumentChain(cert.document_id)
+    const chainResult = await this.verifyDocumentChain(cert.documentId)
     if (!chainResult.ok) {
       return { valid: false, failure: 'chain_broken', details: chainResult.brokenAt }
     }
@@ -149,7 +175,7 @@ export const EvidenceService = {
     // recomputed root doesn't match the stored merkle_root, the log has
     // been tampered with or rewritten (the property the D.3 spec promised
     // the transparency log would provide).
-    const completionDate = (manifest.completedAt || cert.created_at).slice(0, 10)
+    const completionDate = (manifest.completedAt || cert.createdAt.toISOString()).slice(0, 10)
     const { data: logEntry } = await supabase
       .from('evidence_log_entries')
       .select('log_date, merkle_root, entry_count')
@@ -210,7 +236,7 @@ export const EvidenceService = {
     }
 
     // TSA check -- if token exists, TSA is verified
-    const tsaOk = !!cert.tst_token
+    const tsaOk = cert.tstToken !== null
 
     if (tsaOk) {
       return { valid: true, chainOk: true, logOk: true, tsaOk: true, manifest }

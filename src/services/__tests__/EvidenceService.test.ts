@@ -158,6 +158,69 @@ describe('EvidenceService.getCertificate', () => {
   })
 })
 
+describe('EvidenceService.getCertificateById', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+    mockRpc.mockReset()
+  })
+
+  it('returns null when no certificate exists for the given id', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+    })
+    const r = await EvidenceService.getCertificateById('missing-cert')
+    expect(r).toBeNull()
+  })
+
+  it('M5: looks up by primary key (id), not by document_id', async () => {
+    // The verify page has the cert id (from the URL) but not the document
+    // id. getCertificateById must filter on `id`, while getCertificate
+    // filters on `document_id`. We assert the column used in the .eq()
+    // call is `id` (not `document_id`).
+    let capturedEqCol: string | null = null
+    let capturedEqVal: string | null = null
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn((col: string, val: unknown) => {
+        capturedEqCol = col
+        capturedEqVal = val as string
+        return {
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      }),
+    })
+    await EvidenceService.getCertificateById('cert-1')
+    expect(capturedEqCol).toBe('id')
+    expect(capturedEqVal).toBe('cert-1')
+  })
+
+  it('returns a mapped Certificate when found', async () => {
+    const fakeRow = {
+      id: 'cert-1',
+      document_id: 'doc-1',
+      content_hash_at_send: Buffer.from('a'.repeat(64), 'hex'),
+      content_hash_at_completion: Buffer.from('b'.repeat(64), 'hex'),
+      chain_root_hash: Buffer.from('c'.repeat(64), 'hex'),
+      merkle_root_at_completion: null,
+      pdf_storage_path: null,
+      tst_token: null,
+      created_at: '2026-06-16T00:00:00.000Z',
+      tsa_issued_at: null,
+    }
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: fakeRow, error: null }),
+    })
+    const r = await EvidenceService.getCertificateById('cert-1')
+    expect(r).not.toBeNull()
+    expect(r!.id).toBe('cert-1')
+    expect(r!.documentId).toBe('doc-1')
+  })
+})
+
 describe('EvidenceService.issueCertificate (Phase A)', () => {
   beforeEach(() => {
     mockFrom.mockReset()
