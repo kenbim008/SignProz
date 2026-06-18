@@ -16,6 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ServiceError } from '@/services/errors'
 import { canonicalizeContent } from '@/lib/canonicalize'
 import { merkleRoot } from '@/lib/merkle'
+import { toBuffer } from '@/lib/buffers'
 import { logger } from '@/lib/logger'
 import { put as blobPut } from '@vercel/blob'
 import { renderCertificatePdf } from '@/lib/pdf/certificate'
@@ -177,14 +178,14 @@ export const EvidenceService = {
     }
 
     const dayLeaves = (dayRows ?? [])
-      .map(r => r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash as string, 'hex'))
-      .filter((b): b is Buffer => b instanceof Buffer && b.length === 32)
+      .map(r => toBuffer(r.hash))
+      .filter((b): b is Buffer => b !== null && b.length === 32)
 
     const recomputedRoot = merkleRoot(dayLeaves)
-    const storedRootRaw = logEntry.merkle_root
-    const storedRoot = storedRootRaw instanceof Buffer
-      ? storedRootRaw
-      : Buffer.from(storedRootRaw as string, 'hex')
+    // merkle_root is NOT NULL in the DB schema; toBuffer() will not return
+    // null in practice. The `?? Buffer.alloc(0)` keeps TypeScript happy
+    // and produces the same mismatch outcome as a null row would.
+    const storedRoot = toBuffer(logEntry.merkle_root) ?? Buffer.alloc(0)
 
     // The recomputed root must equal the stored merkle_root. If not, the
     // log entry's merkle_root does not match the audit_logs the appender
@@ -280,9 +281,7 @@ export const EvidenceService = {
         'Document was sent before evidence tracking was enabled; cannot certify',
       )
     }
-    const contentHashAtSend = storedHashAtSend instanceof Buffer
-      ? storedHashAtSend
-      : Buffer.from(storedHashAtSend, 'hex')
+    const contentHashAtSend = toBuffer(storedHashAtSend)!
 
     // Compute content hash at completion from the current content
     const contentHashAtCompletion = this.hashContent(doc.content)
@@ -300,9 +299,9 @@ export const EvidenceService = {
       .eq('document_id', documentId)
       .order('created_at', { ascending: true })
 
-    const chainHashes = (auditRows ?? []).map(r =>
-      r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash, 'hex')
-    ).filter(Boolean)
+    const chainHashes = (auditRows ?? [])
+      .map(r => toBuffer(r.hash))
+      .filter((b): b is Buffer => b !== null)
     const merkleRootForDoc = merkleRoot(chainHashes)
     const chainRootHash = chainHashes[chainHashes.length - 1] ?? Buffer.alloc(0)
 
@@ -447,8 +446,8 @@ export const EvidenceService = {
     }
 
     const leaves = (rows ?? [])
-      .map(r => r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash, 'hex'))
-      .filter(b => b && b.length === 32)
+      .map(r => toBuffer(r.hash))
+      .filter((b): b is Buffer => b !== null && b.length === 32)
 
     const merkleRootForDay = merkleRoot(leaves)
 
@@ -464,11 +463,7 @@ export const EvidenceService = {
       .limit(1)
       .maybeSingle()
 
-    const prevLogHash = prevEntry?.log_hash instanceof Buffer
-      ? prevEntry.log_hash
-      : prevEntry?.log_hash
-        ? Buffer.from(prevEntry.log_hash, 'hex')
-        : null
+    const prevLogHash = prevEntry ? toBuffer(prevEntry.log_hash) : null
 
     // Compute log_hash = SHA-256(prev_log_hash || merkle_root || entry_count || log_date)
     const logHash = createHash('sha256')
@@ -504,24 +499,20 @@ export const EvidenceService = {
 function mapCertificate(row: Record<string, unknown>): Certificate {
   // The supabase admin client has no custom transformer, so PostgREST
   // returns BYTEA columns as hex strings (or as Buffer in some setups).
-  // Normalize all 5 BYTEA fields to Buffer using the same pattern that
-  // appears throughout this file (lines 105-110, 243-245, 263-265, 281,
-  // 410-411, 423-424). Without this, the PDF renderer at
-  // src/lib/pdf/certificate.ts:87 calls .toString('hex') on a string and
-  // produces garbage in the rendered certificate.
-  const asBuffer = (v: unknown): Buffer =>
-    v instanceof Buffer ? v : Buffer.from(v as string, 'hex')
+  // Normalize all 5 BYTEA fields to Buffer using the shared `toBuffer`
+  // helper. The required BYTEA fields (content_hash_at_send, etc.) are
+  // NOT NULL in the DB schema; the optional ones (merkle_root_at_completion,
+  // tst_token) round-trip through `toBuffer` which preserves nullness.
+  const bytea = (v: unknown) => toBuffer(v as Buffer | string | null | undefined)
   return {
     id: row.id as string,
     documentId: row.document_id as string,
-    contentHashAtSend: asBuffer(row.content_hash_at_send),
-    contentHashAtCompletion: asBuffer(row.content_hash_at_completion),
-    chainRootHash: asBuffer(row.chain_root_hash),
-    merkleRootAtCompletion: row.merkle_root_at_completion
-      ? asBuffer(row.merkle_root_at_completion)
-      : null,
+    contentHashAtSend: bytea(row.content_hash_at_send) ?? Buffer.alloc(0),
+    contentHashAtCompletion: bytea(row.content_hash_at_completion) ?? Buffer.alloc(0),
+    chainRootHash: bytea(row.chain_root_hash) ?? Buffer.alloc(0),
+    merkleRootAtCompletion: bytea(row.merkle_root_at_completion),
     pdfStoragePath: (row.pdf_storage_path as string) ?? null,
-    tstToken: row.tst_token ? asBuffer(row.tst_token) : null,
+    tstToken: bytea(row.tst_token),
     createdAt: new Date(row.created_at as string),
     tsaIssuedAt: row.tsa_issued_at ? new Date(row.tsa_issued_at as string) : null,
   }

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { EvidenceService } from '@/services'
 import { logger } from '@/lib/logger'
 import { isAuthorized } from '@/lib/cron'
+import { toBuffer } from '@/lib/buffers'
 
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
@@ -21,9 +22,7 @@ export async function POST(request: Request) {
   let failed = 0
   for (const cert of pending ?? []) {
     try {
-      const hash = cert.content_hash_at_completion instanceof Buffer
-        ? cert.content_hash_at_completion
-        : Buffer.from(cert.content_hash_at_completion, 'hex')
+      const hash = toBuffer(cert.content_hash_at_completion) ?? Buffer.alloc(0)
       await EvidenceService.requestAndStoreTimestamp(cert.id, hash)
       succeeded++
     } catch (err) {
