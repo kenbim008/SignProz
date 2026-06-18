@@ -8,6 +8,13 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => mockSupabase,
 }))
 
+// Mock the email module so dynamic import('@/lib/email/sendMagicLink') in
+// sendForSigning doesn't try to instantiate nodemailer/Resend during tests.
+const mockSendMagicLinkEmail = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/lib/email/sendMagicLink', () => ({
+  sendMagicLinkEmail: (...args: unknown[]) => mockSendMagicLinkEmail(...args),
+}))
+
 import { DocumentService } from '@/services/DocumentService'
 import { ServiceError } from '@/services/errors'
 
@@ -141,6 +148,7 @@ describe('DocumentService.create', () => {
 describe('DocumentService.sendForSigning', () => {
   beforeEach(() => {
     mockFrom.mockReset()
+    mockSendMagicLinkEmail.mockClear()
   })
 
   it('throws CONFLICT if document is not in draft status', async () => {
@@ -154,6 +162,123 @@ describe('DocumentService.sendForSigning', () => {
     })
 
     await expect(DocumentService.sendForSigning('d1', 'user-1')).rejects.toThrow(ServiceError)
+  })
+
+  it('writes a non-null 32-byte content_hash_at_send atomically with the status transition', async () => {
+    // F1 fix: when transitioning draft -> sent, the documents UPDATE payload
+    // must include content_hash_at_send as a 32-byte Buffer so the integrity
+    // model can later detect post-send content edits.
+    const documentContent = '<p>contract body</p>'
+    let docUpdatePayload: Record<string, unknown> | null = null
+
+    // Build a queue of mock responses for each supabase.from() call in
+    // sendForSigning. Order:
+    //   1. validateOwnership (documents, id/user_id/status) - mock as 'this' chain
+    //   2. signers.select
+    //   3. signature_fields.select
+    //   4. documents.select('content') (new, F1)
+    //   5. signers.update (per signer)
+    //   6. documents.update (the one we want to capture)
+    //   7. audit_logs.insert
+    //   8. this.get() final fetch
+    let callIndex = 0
+    mockFrom.mockImplementation((table: string) => {
+      callIndex++
+      // 1: validateOwnership - documents select id/user_id/status
+      if (callIndex === 1) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: 'd1', user_id: 'user-1', status: 'draft', expiration_days: 7 },
+            error: null,
+          }),
+        }
+      }
+      // 2: signers.select
+      if (callIndex === 2) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: [{ id: 's1', email: 'a@x.com', name: 'Alice', order: 0 }],
+            error: null,
+          }),
+        }
+      }
+      // 3: signature_fields.select
+      if (callIndex === 3) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: [{ id: 'f1', signer_id: 's1' }],
+            error: null,
+          }),
+        }
+      }
+      // 4: documents.select('content') -- the new F1 fetch
+      if (callIndex === 4) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { content: documentContent },
+            error: null,
+          }),
+        }
+      }
+      // 5: signers.update (one per signer; we have 1)
+      if (callIndex === 5) {
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      }
+      // 6: documents.update -- capture the payload
+      if (callIndex === 6) {
+        return {
+          update: vi.fn((payload: Record<string, unknown>) => {
+            docUpdatePayload = payload
+            return {
+              eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }
+          }),
+        }
+      }
+      // 7: audit_logs.insert
+      if (callIndex === 7) {
+        return {
+          insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      }
+      // 8: this.get() final fetch
+      if (callIndex === 8) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'd1',
+              user_id: 'user-1',
+              status: 'sent',
+              content: documentContent,
+            },
+            error: null,
+          }),
+        }
+      }
+      throw new Error(`unexpected mockFrom call #${callIndex} for table ${table}`)
+    })
+
+    await DocumentService.sendForSigning('d1', 'user-1')
+
+    // The UPDATE payload must have been captured and contain the new field.
+    expect(docUpdatePayload).toBeTruthy()
+    expect(docUpdatePayload).toMatchObject({ status: 'sent' })
+    expect(docUpdatePayload).toHaveProperty('content_hash_at_send')
+    const payload: Record<string, unknown> = docUpdatePayload!
+    const hash = payload.content_hash_at_send
+    expect(Buffer.isBuffer(hash)).toBe(true)
+    expect((hash as Buffer).length).toBe(32)
   })
 })
 

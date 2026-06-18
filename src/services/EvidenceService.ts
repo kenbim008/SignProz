@@ -204,7 +204,7 @@ export const EvidenceService = {
     // Fetch the completed document
     const { data: doc, error: docErr } = await supabase
       .from('documents')
-      .select('id, title, user_id, content, status, completed_at')
+      .select('id, title, user_id, content, status, completed_at, content_hash_at_send')
       .eq('id', documentId)
       .single()
 
@@ -226,8 +226,25 @@ export const EvidenceService = {
       throw new ServiceError('INTEGRITY_FAILURE', 'Audit chain is broken; cannot issue certificate')
     }
 
-    // Compute content hashes
-    const contentHashAtSend = this.hashContent(doc.content)
+    // Use the content_hash_at_send recorded at send time. If the row is null,
+    // the document was sent before evidence tracking was enabled (or before
+    // the F1 fix landed). Silently recomputing from current content would
+    // perpetuate the bug -- the two hashes would always be equal and the
+    // post-send tamper detection would be a no-op. Reject so the operator
+    // can decide what to do (re-send, archive, etc.).
+    const storedHashAtSend = doc.content_hash_at_send
+    if (storedHashAtSend === null || storedHashAtSend === undefined) {
+      logger.error('evidence.issue.content_hash_at_send_missing', null, { documentId })
+      throw new ServiceError(
+        'INTEGRITY_FAILURE',
+        'Document was sent before evidence tracking was enabled; cannot certify',
+      )
+    }
+    const contentHashAtSend = storedHashAtSend instanceof Buffer
+      ? storedHashAtSend
+      : Buffer.from(storedHashAtSend, 'hex')
+
+    // Compute content hash at completion from the current content
     const contentHashAtCompletion = this.hashContent(doc.content)
 
     // Fetch signers
