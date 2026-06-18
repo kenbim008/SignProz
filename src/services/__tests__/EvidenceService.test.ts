@@ -386,9 +386,13 @@ describe('EvidenceService.verifyCertificate', () => {
   })
 
   it('returns valid: true with all checks passing', async () => {
-    let callCount = 0
+    // F3.3: the log check now also recomputes the day's Merkle root from the
+    // same set of audit_logs that appendDailyLogEntry used. The mock here
+    // must provide a merkle_root that matches the recomputed root over the
+    // day's audit_logs. For simplicity, use a single leaf and have the log
+    // entry's merkle_root equal that leaf (merkleRoot of [h] returns h).
+    const leaf = Buffer.alloc(32, 7)
     mockFrom.mockImplementation((table: string) => {
-      callCount++
       if (table === 'certificates') {
         return {
           select: vi.fn().mockReturnThis(),
@@ -413,10 +417,23 @@ describe('EvidenceService.verifyCertificate', () => {
           gte: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({ data: { log_hash: Buffer.alloc(32, 9) }, error: null }),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { log_date: '2026-06-16', merkle_root: leaf, entry_count: 1 },
+            error: null,
+          }),
         }
       }
-      throw new Error(`unexpected ${table} at #${callCount}`)
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockResolvedValue({
+            data: [{ hash: leaf }],
+            error: null,
+          }),
+        }
+      }
+      throw new Error(`unexpected table ${table}`)
     })
 
     mockRpc.mockResolvedValue({ data: [{ ok: true }], error: null })
@@ -478,6 +495,169 @@ describe('EvidenceService.verifyCertificate', () => {
     const r = await EvidenceService.verifyCertificate('cert-1')
     expect(r.valid).toBe(false)
     if (!r.valid) expect(r.failure).toBe('chain_broken')
+  })
+
+  it('F3.3: returns log_missing when no log entry exists for the completion date', async () => {
+    // No log entry on/after the completion date -- the daily transparency
+    // log has not been written for that day yet. This is the same outcome
+    // as the pre-F3.3 implementation; pin it so the new check does not
+    // accidentally short-circuit on something else.
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'certificates') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'cert-1', document_id: 'doc-1',
+              json_manifest: { documentId: 'doc-1', documentTitle: 'T', completedAt: '2026-06-16T12:00:00Z', signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb' },
+              tst_token: null, tsa_issued_at: null, created_at: '2026-06-16T12:00:00Z',
+            },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'evidence_log_entries') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    mockRpc.mockResolvedValue({ data: [{ ok: true }], error: null })
+
+    const r = await EvidenceService.verifyCertificate('cert-1')
+    expect(r.valid).toBe(false)
+    if (!r.valid) {
+      expect(r.failure).toBe('log_missing')
+      expect(r.details).toContain('2026-06-16')
+    }
+  })
+
+  it('F3.3: returns log_broken when the log entry merkle_root does not match the recomputed root', async () => {
+    // The D.3 spec promised the transparency log would "catch log rewriting".
+    // The pre-F3.3 check was a near no-op: it only confirmed SOME log entry
+    // existed. This test simulates an attacker (or a buggy migration) that
+    // rewrote the log entry's merkle_root to a wrong value while leaving the
+    // audit_logs table alone. The recompute must catch the mismatch.
+    //
+    // The DB has two audit logs on 2026-06-16 (leaves A=0x01..01, B=0x02..02),
+    // but the log entry claims a merkle_root of 0xFF..FF. The recomputed
+    // root (SHA256(A || B)) does not match 0xFF..FF, so we must report
+    // log_broken.
+    const leafA = Buffer.alloc(32, 1)
+    const leafB = Buffer.alloc(32, 2)
+    const bogusRoot = Buffer.alloc(32, 0xff)
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'certificates') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'cert-1', document_id: 'doc-1',
+              json_manifest: { documentId: 'doc-1', documentTitle: 'T', completedAt: '2026-06-16T12:00:00Z', signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb' },
+              tst_token: null, tsa_issued_at: null, created_at: '2026-06-16T12:00:00Z',
+            },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'evidence_log_entries') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { log_date: '2026-06-16', merkle_root: bogusRoot, entry_count: 2 },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockResolvedValue({
+            data: [{ hash: leafA }, { hash: leafB }],
+            error: null,
+          }),
+        }
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    mockRpc.mockResolvedValue({ data: [{ ok: true }], error: null })
+
+    const r = await EvidenceService.verifyCertificate('cert-1')
+    expect(r.valid).toBe(false)
+    if (!r.valid) {
+      expect(r.failure).toBe('log_broken')
+      expect(r.details).toContain('merkle_root mismatch')
+    }
+  })
+
+  it('F3.3: returns log_broken when the log entry entry_count does not match the day leaf count', async () => {
+    // Defense in depth: the merkle_root already pins the leaf set, but a
+    // separately-stored entry_count that disagrees is still a tampering
+    // signal. Mock the merkle_root to match the single leaf, then lie about
+    // entry_count.
+    const leaf = Buffer.alloc(32, 7)
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'certificates') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'cert-1', document_id: 'doc-1',
+              json_manifest: { documentId: 'doc-1', documentTitle: 'T', completedAt: '2026-06-16T12:00:00Z', signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb' },
+              tst_token: null, tsa_issued_at: null, created_at: '2026-06-16T12:00:00Z',
+            },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'evidence_log_entries') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { log_date: '2026-06-16', merkle_root: leaf, entry_count: 99 },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockResolvedValue({
+            data: [{ hash: leaf }],
+            error: null,
+          }),
+        }
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    mockRpc.mockResolvedValue({ data: [{ ok: true }], error: null })
+
+    const r = await EvidenceService.verifyCertificate('cert-1')
+    expect(r.valid).toBe(false)
+    if (!r.valid) {
+      expect(r.failure).toBe('log_broken')
+      expect(r.details).toContain('entry_count mismatch')
+    }
   })
 })
 

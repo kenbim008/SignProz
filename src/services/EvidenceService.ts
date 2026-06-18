@@ -131,7 +131,10 @@ export const EvidenceService = {
    * Verify a legal evidence certificate by checking:
    * 1. The certificate exists in the database
    * 2. The document's audit chain is intact
-   * 3. A daily transparency-log entry covers the completion date
+   * 3. A daily transparency-log entry covers the completion date AND its
+   *    merkle_root is consistent with the audit_logs the appender saw
+   *    on that day (i.e. the log has not been tampered with since
+   *    `appendDailyLogEntry` ran).
    * 4. A TSA timestamp token exists (when applicable)
    */
   async verifyCertificate(certificateId: string): Promise<VerificationResult> {
@@ -154,11 +157,17 @@ export const EvidenceService = {
       return { valid: false, failure: 'chain_broken', details: chainResult.brokenAt }
     }
 
-    // Log check -- verify there's a log entry for the completion date or later
+    // Log check: pick the first log entry on or after the completion date,
+    // then recompute the day's Merkle root from the same set of audit_logs
+    // that `appendDailyLogEntry` used (i.e. all audit_logs whose created_at
+    // falls in [dayStart, dayEnd) for that log entry's log_date). If the
+    // recomputed root doesn't match the stored merkle_root, the log has
+    // been tampered with or rewritten (the property the D.3 spec promised
+    // the transparency log would provide).
     const completionDate = (manifest.completedAt || cert.created_at).slice(0, 10)
     const { data: logEntry } = await supabase
       .from('evidence_log_entries')
-      .select('log_hash')
+      .select('log_date, merkle_root, entry_count')
       .gte('log_date', completionDate)
       .order('log_date', { ascending: true })
       .limit(1)
@@ -166,6 +175,53 @@ export const EvidenceService = {
 
     if (!logEntry) {
       return { valid: false, failure: 'log_missing', details: `No log entry for ${completionDate}` }
+    }
+
+    const dayStr = logEntry.log_date as string
+    const dayStart = new Date(dayStr + 'T00:00:00Z')
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+
+    const { data: dayRows, error: dayErr } = await supabase
+      .from('audit_logs')
+      .select('hash')
+      .gte('created_at', dayStart.toISOString())
+      .lt('created_at', dayEnd.toISOString())
+
+    if (dayErr) {
+      logger.error('evidence.verify.audit_day_fetch_failed', dayErr, { dayStr })
+      return { valid: false, failure: 'log_broken', details: 'Failed to fetch daily audit logs for verification' }
+    }
+
+    const dayLeaves = (dayRows ?? [])
+      .map(r => r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash as string, 'hex'))
+      .filter((b): b is Buffer => b instanceof Buffer && b.length === 32)
+
+    const recomputedRoot = this.merkleRootOfHashes(dayLeaves)
+    const storedRootRaw = logEntry.merkle_root
+    const storedRoot = storedRootRaw instanceof Buffer
+      ? storedRootRaw
+      : Buffer.from(storedRootRaw as string, 'hex')
+
+    // The recomputed root must equal the stored merkle_root. If not, the
+    // log entry's merkle_root does not match the audit_logs the appender
+    // actually saw that day -- the log was tampered with.
+    if (recomputedRoot.length !== storedRoot.length || !recomputedRoot.equals(storedRoot)) {
+      return {
+        valid: false,
+        failure: 'log_broken',
+        details: `Log entry merkle_root mismatch for ${dayStr}: recomputed ${recomputedRoot.toString('hex')} vs stored ${storedRoot.toString('hex')}`,
+      }
+    }
+
+    // Sanity: entry_count should match the leaf count we got. Not the
+    // primary check (the merkle_root comparison above is), but a cheap
+    // signal if the table was touched but the root happens to match.
+    if (typeof logEntry.entry_count === 'number' && logEntry.entry_count !== dayLeaves.length) {
+      return {
+        valid: false,
+        failure: 'log_broken',
+        details: `Log entry entry_count mismatch for ${dayStr}: ${logEntry.entry_count} vs ${dayLeaves.length}`,
+      }
     }
 
     // TSA check -- if token exists, TSA is verified
