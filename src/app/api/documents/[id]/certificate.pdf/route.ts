@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { EvidenceService } from '@/services'
-import { apiError500, apiUnauthorized } from '@/lib/api-errors'
+import { DocumentService, EvidenceService } from '@/services'
+import { apiErrorResponse, apiError500, apiUnauthorized } from '@/lib/api-errors'
 import { head } from '@vercel/blob'
 
 interface RouteParams {
@@ -12,6 +12,20 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const { id } = await params
   const session = await getSession()
   if (!session) return apiUnauthorized()
+
+  // Verify ownership (document-scoped route -- remap FORBIDDEN to 404).
+  // The PDF route is an alternate access path to the certificate, so it must
+  // enforce the same ownership check as the JSON /certificate route. Without
+  // this, any authenticated user could download any other user's certificate
+  // PDF by knowing the document id.
+  try {
+    await DocumentService.validateOwnership(id, session.id)
+  } catch (err) {
+    return (
+      apiErrorResponse(err, { endpoint: 'certificate.pdf', documentId: id, userId: session.id }, { forbidToNotFound: true }) ??
+      apiError500(err, { endpoint: 'certificate.pdf', documentId: id, userId: session.id })
+    )
+  }
 
   const cert = await EvidenceService.getCertificate(id)
   if (!cert || !cert.pdfStoragePath) {
