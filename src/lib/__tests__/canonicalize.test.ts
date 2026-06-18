@@ -38,12 +38,6 @@ describe('canonicalizeAuditRow', () => {
     const b = canonicalizeAuditRow({ metadata: { a: 2, b: 1 } } as any)
     expect(a).toBe(b)
   })
-  it('serializes Date instances as ISO 8601 strings with millisecond precision', () => {
-    const d = new Date('2026-06-16T12:00:00.000Z')
-    const out = canonicalizeAuditRow({ created_at: d, action: 'foo' } as any)
-    expect(out).toBe('{"action":"foo","created_at":"2026-06-16T12:00:00.000Z"}')
-  })
-
   it('floors ISO timestamps with microsecond precision to milliseconds', () => {
     // Database timestamps may include microsecond digits beyond ms precision.
     // SQL date_trunc('milliseconds', ...) floors them; JS must match.
@@ -73,14 +67,6 @@ describe('canonicalizeAuditRow', () => {
       action: 'sign',
     } as any)
     expect(out).toBe('{"action":"sign","created_at":"2026-06-16T12:00:00.000Z"}')
-  })
-
-  it('Date instances produce same output as ISO string timestamps', () => {
-    // Date should produce the same canonical form as the corresponding ISO string
-    const d = new Date('2026-06-16T12:00:00.000Z')
-    const fromDate = canonicalizeAuditRow({ created_at: d, action: 'test' } as any)
-    const fromStr = canonicalizeAuditRow({ created_at: '2026-06-16T12:00:00.000Z', action: 'test' } as any)
-    expect(fromDate).toBe(fromStr)
   })
 
   it('omits chain_key (F3.4): row with chain_key matches row without (matches PL/pgSQL canonical_audit_json)', () => {

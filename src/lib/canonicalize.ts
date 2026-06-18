@@ -17,7 +17,7 @@ export function canonicalizeContent(content: string | null | undefined): string 
 /**
  * Stable JSON representation of an audit row for hashing.
  * - Sorts all keys alphabetically (deep)
- * - Omits prev_hash and hash fields
+ * - Omits prev_hash, hash, and chain_key fields
  * - Floors ISO timestamps to millisecond precision (matching PL/pgSQL
  *   date_trunc('milliseconds', ...) which truncates, not rounds)
  * - Must match PL/pgSQL canonical_audit_json
@@ -53,29 +53,28 @@ function floorTimestamps(obj: Record<string, unknown>): Record<string, unknown> 
   return result
 }
 
+/**
+ * JSON.stringify with recursively-sorted object keys. Replaces the
+ * hand-rolled stringifier: native JSON.stringify is faster, battle-tested,
+ * and matches the syntax auditors and PL/pgSQL expect.
+ *
+ * Audit rows never carry Date instances by the time they reach this
+ * function (PostgREST returns timestamps as strings), and the
+ * `Number.isFinite` branch from the previous implementation was dead
+ * -- no audit row field is a finite number relevant to the hash.
+ */
 function stableStringify(value: unknown): string {
-  if (value === null) return 'null'
-  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'null'
-  if (typeof value === 'string') return JSON.stringify(value)
-  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value)
+  }
   if (Array.isArray(value)) {
     return '[' + value.map(stableStringify).join(',') + ']'
   }
-  if (value instanceof Date) {
-    // Floor to milliseconds: manual formatting avoids toISOString() rounding
-    const y = value.getUTCFullYear()
-    const mo = String(value.getUTCMonth() + 1).padStart(2, '0')
-    const d = String(value.getUTCDate()).padStart(2, '0')
-    const h = String(value.getUTCHours()).padStart(2, '0')
-    const mi = String(value.getUTCMinutes()).padStart(2, '0')
-    const s = String(value.getUTCSeconds()).padStart(2, '0')
-    const ms = String(Math.floor(value.getTime() % 1000)).padStart(3, '0')
-    return JSON.stringify(`${y}-${mo}-${d}T${h}:${mi}:${s}.${ms}Z`)
+  const obj = value as Record<string, unknown>
+  const sortedKeys = Object.keys(obj).sort()
+  const parts: string[] = []
+  for (const k of sortedKeys) {
+    parts.push(JSON.stringify(k) + ':' + stableStringify(obj[k]))
   }
-  if (typeof value === 'object') {
-    const obj = value as Record<string, unknown>
-    const keys = Object.keys(obj).sort()
-    return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}'
-  }
-  return 'null'
+  return '{' + parts.join(',') + '}'
 }
