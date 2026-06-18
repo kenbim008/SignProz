@@ -461,13 +461,14 @@ describe('EvidenceService.appendDailyLogEntry', () => {
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           }
         }
-        // callCount 3: prev entry fetch (order/limit/single)
+        // callCount 3: prev entry fetch (lte/order/limit/maybeSingle)
         if (callCount === 3) {
           return {
             select: vi.fn().mockReturnThis(),
+            lte: vi.fn().mockReturnThis(),
             order: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
+            maybeSingle: vi.fn().mockResolvedValue({
               data: { log_hash: Buffer.alloc(32, 7) },
               error: null,
             }),
@@ -517,5 +518,70 @@ describe('EvidenceService.appendDailyLogEntry', () => {
     await EvidenceService.appendDailyLogEntry(new Date('2026-06-16T12:00:00Z'))
     // Idempotency: should return without fetching audit_logs
     expect(mockFrom).toHaveBeenCalledTimes(1)
+  })
+
+  it('F3.5: prev-entry query filters by log_date <= target (backfill safety)', async () => {
+    // The previous-day query must be restricted to log_date <= the target
+    // date. Otherwise, a backfill call for a past date (e.g. 2026-06-10)
+    // would chain off a future entry's log_hash (e.g. 2026-06-15), breaking
+    // the chain's monotonicity. We assert the .lte() call is made with the
+    // target date and the result is the prev entry on or before that date.
+    const targetDate = '2026-06-10'
+    const capturedLteFilters: unknown[] = []
+    const lteCallDates: unknown[] = []
+
+    let callCount = 0
+    mockFrom.mockImplementation((table: string) => {
+      callCount++
+      if (table === 'evidence_log_entries') {
+        if (callCount === 1) {
+          // existing check (no entry for 2026-06-10 yet)
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+        if (callCount === 3) {
+          // prev entry fetch -- capture the .lte() argument
+          const lte = vi.fn((col: string, val: unknown) => {
+            capturedLteFilters.push(col)
+            lteCallDates.push(val)
+            return {
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                // Simulate the DB returning the most recent entry <= 2026-06-10
+                data: { log_hash: Buffer.alloc(32, 5) },
+                error: null,
+              }),
+            }
+          })
+          return {
+            select: vi.fn().mockReturnThis(),
+            lte,
+          }
+        }
+        if (callCount === 4) {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+      }
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }
+      }
+      throw new Error(`unexpected table ${table} call #${callCount}`)
+    })
+
+    await EvidenceService.appendDailyLogEntry(new Date(`${targetDate}T12:00:00Z`))
+
+    // The prev-entry query must filter by log_date <= targetDate.
+    expect(capturedLteFilters).toContain('log_date')
+    expect(lteCallDates).toContain(targetDate)
   })
 })

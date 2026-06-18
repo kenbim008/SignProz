@@ -412,13 +412,17 @@ export const EvidenceService = {
 
     const merkleRootForDay = this.merkleRootOfHashes(leaves)
 
-    // Fetch previous log entry
+    // Fetch previous log entry -- must be the most recent entry on or before
+    // `dateStr`, not the most recent entry globally. Without the .lte filter,
+    // a backfill call for a past date (e.g. after an outage) would chain off a
+    // future entry's log_hash, breaking the chain's monotonicity.
     const { data: prevEntry } = await supabase
       .from('evidence_log_entries')
       .select('log_hash')
+      .lte('log_date', dateStr)
       .order('log_date', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     const prevLogHash = prevEntry?.log_hash instanceof Buffer
       ? prevEntry.log_hash
