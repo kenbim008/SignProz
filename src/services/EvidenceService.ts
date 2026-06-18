@@ -342,7 +342,7 @@ export const EvidenceService = {
     // Phase B: TSA (fire-and-forget if !skipTsa)
     if (!options.skipTsa) {
       this.requestAndStoreTimestamp(certRow.id, contentHashAtCompletion).catch(err => {
-        logger.error('evidence.issue.phase_b_failed', err, { certificateId: certRow.id })
+        logger.error('evidence.issue.tsa_failed', err, { certificateId: certRow.id, documentId: doc.id })
       })
     }
 
