@@ -77,4 +77,72 @@ describe('requestTimestamp', () => {
       })
     ).rejects.toThrow(TsaError)
   })
+
+  it('M7: per-attempt timeout aborts the fetch and surfaces as TsaError', async () => {
+    // Simulate a hung TCP connection. The mock fetch returns a promise
+    // that rejects when the AbortSignal aborts (mimicking real fetch
+    // behavior under abort). With a 50ms timeout, requestTimestamp
+    // should abort, exhaust the retries, and throw TsaError.
+    mockFetch.mockImplementation((_url: string, init?: RequestInit) => {
+      return new Promise((_resolve, reject) => {
+        const sig = init?.signal
+        if (sig) {
+          if (sig.aborted) {
+            reject(new Error('aborted'))
+          } else {
+            sig.addEventListener('abort', () => reject(new Error('aborted')))
+          }
+        }
+      })
+    })
+
+    const start = Date.now()
+    await expect(
+      requestTimestamp({
+        documentHash: Buffer.from('hash'),
+        tsaUrl: 'https://tsa',
+        maxRetries: 3,
+        baseDelayMs: 1,
+        timeoutMs: 50,
+      })
+    ).rejects.toThrow(TsaError)
+    const elapsed = Date.now() - start
+
+    // Generous upper bound: 3 attempts × 50ms timeout + a few ms of
+    // bookkeeping. If the timeout were not honored, this would block
+    // indefinitely.
+    expect(elapsed).toBeLessThan(2000)
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+  })
+
+  it('M7: timeoutMs option is plumbed to AbortController', async () => {
+    // Verify the fetch call is made with a signal that gets aborted when
+    // the timeout elapses. The mock fetch listens for the abort event so
+    // we can inspect signal state.
+    const signals: AbortSignal[] = []
+    mockFetch.mockImplementation((_url: string, init?: RequestInit) => {
+      const sig = init?.signal
+      if (sig) signals.push(sig)
+      return new Promise((_resolve, reject) => {
+        if (sig) {
+          if (sig.aborted) reject(new Error('aborted'))
+          else sig.addEventListener('abort', () => reject(new Error('aborted')))
+        }
+      })
+    })
+
+    await expect(
+      requestTimestamp({
+        documentHash: Buffer.from('hash'),
+        tsaUrl: 'https://tsa',
+        maxRetries: 1,
+        baseDelayMs: 1,
+        timeoutMs: 30,
+      })
+    ).rejects.toThrow(TsaError)
+
+    // Exactly one signal was passed (single attempt) and it was aborted.
+    expect(signals.length).toBe(1)
+    expect(signals[0].aborted).toBe(true)
+  })
 })
