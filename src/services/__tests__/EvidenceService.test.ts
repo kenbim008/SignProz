@@ -117,6 +117,45 @@ describe('EvidenceService.getCertificate', () => {
     expect(r!.createdAt).toBeInstanceOf(Date)
     expect(r!.tsaIssuedAt).toBeNull()
   })
+
+  it('F3.2: normalizes BYTEA columns returned as hex strings to Buffer instances', async () => {
+    // The supabase admin client has no custom transformer, so PostgREST may
+    // return BYTEA columns as hex strings instead of Buffer. mapCertificate
+    // must coerce them back to Buffer so the PDF renderer's .toString('hex')
+    // call produces the correct hash. This test pins the fix: the mapped
+    // Certificate's BYTEA fields are real Buffer instances, and the bytes
+    // match the hex string that came in.
+    const hex = 'aa'.repeat(32) // 64 hex chars = 32 bytes
+    const fakeRow = {
+      id: 'cert-1',
+      document_id: 'doc-1',
+      content_hash_at_send: hex,
+      content_hash_at_completion: 'bb'.repeat(32),
+      chain_root_hash: 'cc'.repeat(32),
+      merkle_root_at_completion: 'dd'.repeat(32),
+      pdf_storage_path: '/certs/cert-1.pdf',
+      tst_token: 'ee'.repeat(16),
+      created_at: '2026-06-16T00:00:00.000Z',
+      tsa_issued_at: null,
+    }
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: fakeRow, error: null }),
+    })
+    const r = await EvidenceService.getCertificate('doc-1')
+    expect(r).not.toBeNull()
+    expect(Buffer.isBuffer(r!.contentHashAtSend)).toBe(true)
+    expect(Buffer.isBuffer(r!.contentHashAtCompletion)).toBe(true)
+    expect(Buffer.isBuffer(r!.chainRootHash)).toBe(true)
+    expect(Buffer.isBuffer(r!.merkleRootAtCompletion)).toBe(true)
+    expect(Buffer.isBuffer(r!.tstToken)).toBe(true)
+    expect(r!.contentHashAtSend.toString('hex')).toBe(hex)
+    expect(r!.contentHashAtCompletion.toString('hex')).toBe('bb'.repeat(32))
+    expect(r!.chainRootHash.toString('hex')).toBe('cc'.repeat(32))
+    expect(r!.merkleRootAtCompletion!.toString('hex')).toBe('dd'.repeat(32))
+    expect(r!.tstToken!.toString('hex')).toBe('ee'.repeat(16))
+  })
 })
 
 describe('EvidenceService.issueCertificate (Phase A)', () => {

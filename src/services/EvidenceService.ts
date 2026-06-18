@@ -462,15 +462,26 @@ export const EvidenceService = {
 }
 
 function mapCertificate(row: Record<string, unknown>): Certificate {
+  // The supabase admin client has no custom transformer, so PostgREST
+  // returns BYTEA columns as hex strings (or as Buffer in some setups).
+  // Normalize all 5 BYTEA fields to Buffer using the same pattern that
+  // appears throughout this file (lines 105-110, 243-245, 263-265, 281,
+  // 410-411, 423-424). Without this, the PDF renderer at
+  // src/lib/pdf/certificate.ts:87 calls .toString('hex') on a string and
+  // produces garbage in the rendered certificate.
+  const asBuffer = (v: unknown): Buffer =>
+    v instanceof Buffer ? v : Buffer.from(v as string, 'hex')
   return {
     id: row.id as string,
     documentId: row.document_id as string,
-    contentHashAtSend: row.content_hash_at_send as Buffer,
-    contentHashAtCompletion: row.content_hash_at_completion as Buffer,
-    chainRootHash: row.chain_root_hash as Buffer,
-    merkleRootAtCompletion: (row.merkle_root_at_completion as Buffer) ?? null,
+    contentHashAtSend: asBuffer(row.content_hash_at_send),
+    contentHashAtCompletion: asBuffer(row.content_hash_at_completion),
+    chainRootHash: asBuffer(row.chain_root_hash),
+    merkleRootAtCompletion: row.merkle_root_at_completion
+      ? asBuffer(row.merkle_root_at_completion)
+      : null,
     pdfStoragePath: (row.pdf_storage_path as string) ?? null,
-    tstToken: (row.tst_token as Buffer) ?? null,
+    tstToken: row.tst_token ? asBuffer(row.tst_token) : null,
     createdAt: new Date(row.created_at as string),
     tsaIssuedAt: row.tsa_issued_at ? new Date(row.tsa_issued_at as string) : null,
   }
