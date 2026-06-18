@@ -173,24 +173,23 @@ describe('DocumentService.sendForSigning', () => {
 
     // Build a queue of mock responses for each supabase.from() call in
     // sendForSigning. Order:
-    //   1. validateOwnership (documents, id/user_id/status) - mock as 'this' chain
+    //   1. validateOwnership (documents, id/user_id/status/content) -- M2 fold
     //   2. signers.select
     //   3. signature_fields.select
-    //   4. documents.select('content') (new, F1)
-    //   5. signers.update (per signer)
-    //   6. documents.update (the one we want to capture)
-    //   7. audit_logs.insert
-    //   8. this.get() final fetch
+    //   4. signers.update (per signer)
+    //   5. documents.update (the one we want to capture)
+    //   6. audit_logs.insert
+    //   7. this.get() final fetch
     let callIndex = 0
     mockFrom.mockImplementation((table: string) => {
       callIndex++
-      // 1: validateOwnership - documents select id/user_id/status
+      // 1: validateOwnership - documents select id/user_id/status/content
       if (callIndex === 1) {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({
-            data: { id: 'd1', user_id: 'user-1', status: 'draft', expiration_days: 7 },
+            data: { id: 'd1', user_id: 'user-1', status: 'draft', content: documentContent, expiration_days: 7 },
             error: null,
           }),
         }
@@ -215,26 +214,15 @@ describe('DocumentService.sendForSigning', () => {
           }),
         }
       }
-      // 4: documents.select('content') -- the new F1 fetch
+      // 4: signers.update (one per signer; we have 1)
       if (callIndex === 4) {
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: { content: documentContent },
-            error: null,
-          }),
-        }
-      }
-      // 5: signers.update (one per signer; we have 1)
-      if (callIndex === 5) {
         return {
           update: vi.fn().mockReturnThis(),
           eq: vi.fn().mockResolvedValue({ data: null, error: null }),
         }
       }
-      // 6: documents.update -- capture the payload
-      if (callIndex === 6) {
+      // 5: documents.update -- capture the payload
+      if (callIndex === 5) {
         return {
           update: vi.fn((payload: Record<string, unknown>) => {
             docUpdatePayload = payload
@@ -244,14 +232,14 @@ describe('DocumentService.sendForSigning', () => {
           }),
         }
       }
-      // 7: audit_logs.insert
-      if (callIndex === 7) {
+      // 6: audit_logs.insert
+      if (callIndex === 6) {
         return {
           insert: vi.fn().mockResolvedValue({ data: null, error: null }),
         }
       }
-      // 8: this.get() final fetch
-      if (callIndex === 8) {
+      // 7: this.get() final fetch
+      if (callIndex === 7) {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
@@ -279,6 +267,79 @@ describe('DocumentService.sendForSigning', () => {
     const hash = payload.content_hash_at_send
     expect(Buffer.isBuffer(hash)).toBe(true)
     expect((hash as Buffer).length).toBe(32)
+  })
+
+  it('M2: performs only TWO documents SELECTs during sendForSigning (folds content fetch into ownership check)', async () => {
+    // The pre-M2 implementation did three SELECTs against the documents
+    // table: validateOwnership (id/user_id/status), a dedicated content
+    // fetch, and the final this.get() in sendForSigning. The content
+    // fetch has been folded into validateOwnership (id/user_id/status/content),
+    // so the total drops to two. The update() call is a write, not a
+    // read, and does not count.
+    const documentContent = '<p>contract body</p>'
+    let documentsSelectCallCount = 0
+    let documentsUpdateCallCount = 0
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'documents') {
+        return {
+          select: vi.fn(() => {
+            documentsSelectCallCount++
+            return {
+              eq: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: {
+                  id: 'd1',
+                  user_id: 'user-1',
+                  status: 'draft',
+                  content: documentContent,
+                  expiration_days: 7,
+                },
+                error: null,
+              }),
+            }
+          }),
+          update: vi.fn((_payload: Record<string, unknown>) => {
+            documentsUpdateCallCount++
+            return {
+              eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }
+          }),
+        }
+      }
+      if (table === 'signers') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: [{ id: 's1', email: 'a@x.com', name: 'Alice', order: 0 }],
+            error: null,
+          }),
+          update: vi.fn((_payload: Record<string, unknown>) => ({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          })),
+        }
+      }
+      if (table === 'signature_fields') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: [{ id: 'f1', signer_id: 's1' }],
+            error: null,
+          }),
+        }
+      }
+      if (table === 'audit_logs') {
+        return { insert: vi.fn().mockResolvedValue({ data: null, error: null }) }
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    await DocumentService.sendForSigning('d1', 'user-1')
+
+    // M2 fold: validateOwnership (1) + this.get() (1) = 2 reads.
+    // Pre-M2: 3 (validateOwnership + content fetch + this.get()).
+    expect(documentsSelectCallCount).toBe(2)
+    expect(documentsUpdateCallCount).toBe(1)
   })
 })
 

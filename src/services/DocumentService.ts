@@ -120,9 +120,12 @@ export const DocumentService = {
     options: { requireMutable?: boolean } = {}
   ): Promise<Document> {
     const supabase = createAdminClient()
+    // `content` is included so callers like sendForSigning can hash it
+    // without a second SELECT round-trip. The byte cost is negligible
+    // compared to the round-trip savings.
     const { data, error } = await supabase
       .from('documents')
-      .select('id, user_id, status')
+      .select('id, user_id, status, content')
       .eq('id', documentId)
       .single()
 
@@ -336,26 +339,14 @@ export const DocumentService = {
       throw new ServiceError('VALIDATION', 'All signature fields must be assigned to a signer before sending')
     }
 
-    // Load the document content so we can record content_hash_at_send.
-    // validateOwnership only returns id/user_id/status; we need content here
-    // to hash it atomically with the status transition in the same UPDATE.
-    const { data: contentRow, error: contentErr } = await supabase
-      .from('documents')
-      .select('content')
-      .eq('id', documentId)
-      .single()
-
-    if (contentErr || !contentRow) {
-      logger.error('send_for_signing.content_fetch_failed', contentErr, { documentId })
-      throw new ServiceError('INTERNAL', 'Failed to load document content')
-    }
-
     // Compute and persist content_hash_at_send so the integrity model can
     // detect post-send edits by comparing against content_hash_at_completion
     // at certificate issuance. This is the foundation of the D.3 four-layer
     // integrity model: "hash at send vs hash at completion".
+    // `doc.content` came back from the validateOwnership SELECT above
+    // (no second round-trip).
     const { EvidenceService } = await import('@/services/EvidenceService')
-    const contentHashAtSend = EvidenceService.hashContent(contentRow.content)
+    const contentHashAtSend = EvidenceService.hashContent(doc.content)
 
     // Determine sequential vs parallel signing
     const sequential = signers.some((s: { order: number }) => s.order > 0)
