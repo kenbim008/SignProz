@@ -14,7 +14,7 @@
 import { createHash } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ServiceError } from '@/services/errors'
-import { canonicalizeContent, canonicalizeAuditRow } from '@/lib/canonicalize'
+import { canonicalizeContent } from '@/lib/canonicalize'
 import { merkleRoot } from '@/lib/merkle'
 import { logger } from '@/lib/logger'
 import { put as blobPut } from '@vercel/blob'
@@ -57,22 +57,6 @@ export const EvidenceService = {
   hashContent(content: string | null | undefined): Buffer {
     const canonical = canonicalizeContent(content)
     return createHash('sha256').update(canonical, 'utf8').digest()
-  },
-
-  /**
-   * Canonicalize an audit row into its stable JSON representation
-   * for hashing. Delegates to canonicalizeAuditRow from the lib layer.
-   */
-  canonicalizeAuditRow(row: Record<string, unknown>): string {
-    return canonicalizeAuditRow(row)
-  },
-
-  /**
-   * Compute a SHA-256 Merkle root from a list of leaf hashes.
-   * Delegates to merkleRoot from the lib layer.
-   */
-  merkleRootOfHashes(hashes: Buffer[]): Buffer {
-    return merkleRoot(hashes)
   },
 
   /**
@@ -196,7 +180,7 @@ export const EvidenceService = {
       .map(r => r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash as string, 'hex'))
       .filter((b): b is Buffer => b instanceof Buffer && b.length === 32)
 
-    const recomputedRoot = this.merkleRootOfHashes(dayLeaves)
+    const recomputedRoot = merkleRoot(dayLeaves)
     const storedRootRaw = logEntry.merkle_root
     const storedRoot = storedRootRaw instanceof Buffer
       ? storedRootRaw
@@ -319,7 +303,7 @@ export const EvidenceService = {
     const chainHashes = (auditRows ?? []).map(r =>
       r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash, 'hex')
     ).filter(Boolean)
-    const merkleRootForDoc = this.merkleRootOfHashes(chainHashes)
+    const merkleRootForDoc = merkleRoot(chainHashes)
     const chainRootHash = chainHashes[chainHashes.length - 1] ?? Buffer.alloc(0)
 
     // Build manifest
@@ -466,7 +450,7 @@ export const EvidenceService = {
       .map(r => r.hash instanceof Buffer ? r.hash : Buffer.from(r.hash, 'hex'))
       .filter(b => b && b.length === 32)
 
-    const merkleRootForDay = this.merkleRootOfHashes(leaves)
+    const merkleRootForDay = merkleRoot(leaves)
 
     // Fetch previous log entry -- must be the most recent entry on or before
     // `dateStr`, not the most recent entry globally. Without the .lte filter,
