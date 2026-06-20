@@ -13,6 +13,8 @@ This document is the inventory of every environment variable used in SignProz, w
 | `OWNER_EMAIL`                  | `src/lib/email/templates/MagicLinkEmail.tsx`   | The sender address (must be verified in Resend)  | As needed        |
 | `NEXT_PUBLIC_APP_URL`          | Magic link generation in `src/lib/utils.ts`    | Local: `http://localhost:3000`; prod: Vercel URL  | As needed        |
 | `SENTRY_DSN`                   | `sentry.client.config.ts`, `sentry.server.config.ts` | https://sentry.io → Project Settings → Client Keys | As needed  |
+| `CRON_SECRET`                  | `src/lib/cron.ts` (both `/api/cron/*` routes)   | Any sufficiently long random string (e.g. `openssl rand -hex 32`) | On compromise |
+| `TSA_URL`                      | `src/lib/tsa/freetsa.ts` (RFC 3161 endpoint)    | FreeTSA default `https://freetsa.org/tsr`; override for paid TSA | As needed   |
 
 ## Detailed rotation steps
 
@@ -54,6 +56,31 @@ These are tied to the Supabase project. Rotating the URL would require migrating
 4. Update Vercel env var
 5. Update `.env.local`
 6. Redeploy Vercel
+
+### `CRON_SECRET`
+
+Vercel Cron sends this as `Authorization: Bearer $CRON_SECRET` to the
+`/api/cron/daily-evidence-log` and `/api/cron/backfill-timestamps` routes.
+The routes do a constant-time compare against `process.env.CRON_SECRET` and
+return 401 if it doesn't match.
+
+Generate: `openssl rand -hex 32`
+
+Set in: Vercel → Project → Settings → Environment Variables → Production.
+
+Required for the cron endpoints to work. Not required for normal app
+operation; missing the value just disables the cron endpoints (which is
+safe — the next deploy with the value set will resume cron).
+
+Rotate by replacing the value and redeploying. Both routes pick up the
+new value on the next cold start.
+
+### `TSA_URL`
+
+Optional. Defaults to FreeTSA's free endpoint (`https://freetsa.org/tsr`).
+Override in production for a paid TSA if FreeTSA availability becomes a
+concern (the hourly backfill cron retries failed TSA requests, so a
+temporary outage is recoverable, but a paid TSA removes that risk).
 
 ## How to add a new secret
 
