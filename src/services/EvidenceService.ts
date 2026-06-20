@@ -131,6 +131,28 @@ export const EvidenceService = {
   },
 
   /**
+   * Internal: fetch the raw certificates row by id, including the large
+   * `json_manifest` JSONB column. Used by `verifyCertificate`, which needs
+   * both the typed `Certificate` fields and the manifest in a single
+   * round-trip. Returns the raw row + a mapped `Certificate` so callers
+   * don't pay for a second SELECT to access the manifest.
+   */
+  async _getCertificateRowWithManifest(
+    certificateId: string,
+  ): Promise<{ cert: Certificate; manifest: JsonManifest } | null> {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('id', certificateId)
+      .single()
+
+    if (error || !data) return null
+    const manifest = data.json_manifest as JsonManifest
+    return { cert: mapCertificate(data), manifest }
+  },
+
+  /**
    * Verify a legal evidence certificate by checking:
    * 1. The certificate exists in the database
    * 2. The document's audit chain is intact
@@ -142,25 +164,13 @@ export const EvidenceService = {
    */
   async verifyCertificate(certificateId: string): Promise<VerificationResult> {
     const supabase = createAdminClient()
-    const cert = await this.getCertificateById(certificateId)
+    const result = await this._getCertificateRowWithManifest(certificateId)
 
-    if (!cert) {
+    if (!result) {
       return { valid: false, failure: 'cert_not_found' }
     }
 
-    // The full Certificate doesn't carry the JSON manifest; read it
-    // explicitly. (The manifest column is large JSONB and isn't on the
-    // typed Certificate interface.)
-    const { data: manifestRow, error: manifestErr } = await supabase
-      .from('certificates')
-      .select('json_manifest')
-      .eq('id', certificateId)
-      .single()
-
-    if (manifestErr || !manifestRow) {
-      return { valid: false, failure: 'cert_not_found' }
-    }
-    const manifest = manifestRow.json_manifest as JsonManifest
+    const { cert, manifest } = result
 
     // Chain check
     const chainResult = await this.verifyDocumentChain(cert.documentId)
