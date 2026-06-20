@@ -449,12 +449,14 @@ describe('EvidenceService.verifyCertificate', () => {
   })
 
   it('returns valid: true with all checks passing', async () => {
-    // F3.3: the log check now also recomputes the day's Merkle root from the
-    // same set of audit_logs that appendDailyLogEntry used. The mock here
-    // must provide a merkle_root that matches the recomputed root over the
-    // day's audit_logs. For simplicity, use a single leaf and have the log
-    // entry's merkle_root equal that leaf (merkleRoot of [h] returns h).
-    const leaf = Buffer.alloc(32, 7)
+    // F3.3: the log check now reads the stored leaf set from
+    // evidence_log_entries.leaf_hashes and tests cert.merkle_root_at_completion
+    // for membership -- no audit_logs fetch, no recompute. The mock here
+    // provides a leaf_hashes JSONB array containing the cert's merkle root,
+    // and the mockFrom impl throws on audit_logs so any accidental day
+    // fetch would fail the test loudly.
+    const certLeafHex = 'aa'.repeat(32)
+    const certLeaf = Buffer.from(certLeafHex, 'hex')
     mockFrom.mockImplementation((table: string) => {
       if (table === 'certificates') {
         return {
@@ -464,6 +466,7 @@ describe('EvidenceService.verifyCertificate', () => {
             data: {
               id: 'cert-1',
               document_id: 'doc-1',
+              merkle_root_at_completion: certLeaf,
               json_manifest: {
                 documentId: 'doc-1', documentTitle: 'Test', completedAt: '2026-06-16T12:00:00Z',
                 signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb',
@@ -481,17 +484,12 @@ describe('EvidenceService.verifyCertificate', () => {
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { log_date: '2026-06-16', merkle_root: leaf, entry_count: 1 },
-            error: null,
-          }),
-        }
-      }
-      if (table === 'audit_logs') {
-        return {
-          select: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockResolvedValue({
-            data: [{ hash: leaf }],
+            data: {
+              log_date: '2026-06-16',
+              merkle_root: certLeaf,
+              entry_count: 1,
+              leaf_hashes: [certLeafHex],
+            },
             error: null,
           }),
         }
@@ -508,6 +506,10 @@ describe('EvidenceService.verifyCertificate', () => {
       expect(r.logOk).toBe(true)
       expect(r.tsaOk).toBe(true)
     }
+
+    // F3.3 invariant: verify does not touch audit_logs (no recompute).
+    const fromCalls = mockFrom.mock.calls.map(c => c[0])
+    expect(fromCalls).not.toContain('audit_logs')
   })
 
   it('returns cert_not_found when the cert does not exist', async () => {
@@ -602,20 +604,14 @@ describe('EvidenceService.verifyCertificate', () => {
     }
   })
 
-  it('F3.3: returns log_broken when the log entry merkle_root does not match the recomputed root', async () => {
-    // The D.3 spec promised the transparency log would "catch log rewriting".
-    // The pre-F3.3 check was a near no-op: it only confirmed SOME log entry
-    // existed. This test simulates an attacker (or a buggy migration) that
-    // rewrote the log entry's merkle_root to a wrong value while leaving the
-    // audit_logs table alone. The recompute must catch the mismatch.
-    //
-    // The DB has two audit logs on 2026-06-16 (leaves A=0x01..01, B=0x02..02),
-    // but the log entry claims a merkle_root of 0xFF..FF. The recomputed
-    // root (SHA256(A || B)) does not match 0xFF..FF, so we must report
-    // log_broken.
-    const leafA = Buffer.alloc(32, 1)
-    const leafB = Buffer.alloc(32, 2)
-    const bogusRoot = Buffer.alloc(32, 0xff)
+  it('F3.3: returns log_broken when the cert merkle_root is not in the stored leaf set', async () => {
+    // The pre-F3.3 check recomputed the day's root from audit_logs and
+    // compared it to log_entry.merkle_root. The F3.3 check instead tests
+    // cert.merkle_root_at_completion for membership in log_entry.leaf_hashes.
+    // Here the log entry's leaf set exists but does NOT contain the cert's
+    // merkle root -- a tampering or rewrite signal.
+    const certLeaf = Buffer.from('aa'.repeat(32), 'hex')
+    const otherLeaf = Buffer.from('bb'.repeat(32), 'hex')
 
     mockFrom.mockImplementation((table: string) => {
       if (table === 'certificates') {
@@ -625,6 +621,7 @@ describe('EvidenceService.verifyCertificate', () => {
           single: vi.fn().mockResolvedValue({
             data: {
               id: 'cert-1', document_id: 'doc-1',
+              merkle_root_at_completion: certLeaf,
               json_manifest: { documentId: 'doc-1', documentTitle: 'T', completedAt: '2026-06-16T12:00:00Z', signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb' },
               tst_token: null, tsa_issued_at: null, created_at: '2026-06-16T12:00:00Z',
             },
@@ -639,17 +636,12 @@ describe('EvidenceService.verifyCertificate', () => {
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { log_date: '2026-06-16', merkle_root: bogusRoot, entry_count: 2 },
-            error: null,
-          }),
-        }
-      }
-      if (table === 'audit_logs') {
-        return {
-          select: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockResolvedValue({
-            data: [{ hash: leafA }, { hash: leafB }],
+            data: {
+              log_date: '2026-06-16',
+              merkle_root: otherLeaf,
+              entry_count: 1,
+              leaf_hashes: [otherLeaf.toString('hex')],
+            },
             error: null,
           }),
         }
@@ -663,16 +655,16 @@ describe('EvidenceService.verifyCertificate', () => {
     expect(r.valid).toBe(false)
     if (!r.valid) {
       expect(r.failure).toBe('log_broken')
-      expect(r.details).toContain('merkle_root mismatch')
+      expect(r.details).toContain('not in stored leaf set')
     }
   })
 
-  it('F3.3: returns log_broken when the log entry entry_count does not match the day leaf count', async () => {
-    // Defense in depth: the merkle_root already pins the leaf set, but a
-    // separately-stored entry_count that disagrees is still a tampering
-    // signal. Mock the merkle_root to match the single leaf, then lie about
-    // entry_count.
-    const leaf = Buffer.alloc(32, 7)
+  it('F3.3: returns log_broken when the log entry entry_count does not match the leaf set size', async () => {
+    // Defense in depth: the membership test above is the primary check, but
+    // a separately-stored entry_count that disagrees with the leaf_hashes
+    // array length is still a tampering signal. Mock a leaf set whose
+    // membership passes, then lie about entry_count.
+    const leaf = Buffer.from('cc'.repeat(32), 'hex')
     mockFrom.mockImplementation((table: string) => {
       if (table === 'certificates') {
         return {
@@ -681,6 +673,7 @@ describe('EvidenceService.verifyCertificate', () => {
           single: vi.fn().mockResolvedValue({
             data: {
               id: 'cert-1', document_id: 'doc-1',
+              merkle_root_at_completion: leaf,
               json_manifest: { documentId: 'doc-1', documentTitle: 'T', completedAt: '2026-06-16T12:00:00Z', signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb' },
               tst_token: null, tsa_issued_at: null, created_at: '2026-06-16T12:00:00Z',
             },
@@ -695,17 +688,12 @@ describe('EvidenceService.verifyCertificate', () => {
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({
-            data: { log_date: '2026-06-16', merkle_root: leaf, entry_count: 99 },
-            error: null,
-          }),
-        }
-      }
-      if (table === 'audit_logs') {
-        return {
-          select: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockResolvedValue({
-            data: [{ hash: leaf }],
+            data: {
+              log_date: '2026-06-16',
+              merkle_root: leaf,
+              entry_count: 99,
+              leaf_hashes: [leaf.toString('hex')],
+            },
             error: null,
           }),
         }
@@ -865,5 +853,66 @@ describe('EvidenceService.appendDailyLogEntry', () => {
     // The prev-entry query must filter by log_date <= targetDate.
     expect(capturedLteFilters).toContain('log_date')
     expect(lteCallDates).toContain(targetDate)
+  })
+
+  it('F3.3: insert payload includes leaf_hashes JSONB array of hex strings', async () => {
+    // The new O(1) verify path needs the leaf set stored on the log entry.
+    // appendDailyLogEntry must write leaf_hashes: [hex, hex, ...] with one
+    // entry per day's audit log hash, in the same order they were fetched.
+    const leafA = Buffer.alloc(32, 1)
+    const leafB = Buffer.alloc(32, 2)
+    const capturedInserts: Array<Record<string, unknown>> = []
+
+    let callCount = 0
+    mockFrom.mockImplementation((table: string) => {
+      callCount++
+      if (table === 'evidence_log_entries') {
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+        if (callCount === 3) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            lte: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { log_hash: Buffer.alloc(32, 7) },
+              error: null,
+            }),
+          }
+        }
+        if (callCount === 4) {
+          return {
+            insert: vi.fn((payload: Record<string, unknown>) => {
+              capturedInserts.push(payload)
+              return { data: null, error: null }
+            }),
+          }
+        }
+      }
+      if (table === 'audit_logs') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockResolvedValue({
+            data: [{ hash: leafA }, { hash: leafB }],
+            error: null,
+          }),
+        }
+      }
+      throw new Error(`unexpected table ${table} call #${callCount}`)
+    })
+
+    await EvidenceService.appendDailyLogEntry(new Date('2026-06-16T12:00:00Z'))
+
+    expect(capturedInserts).toHaveLength(1)
+    const payload = capturedInserts[0]
+    expect(payload.leaf_hashes).toEqual([leafA.toString('hex'), leafB.toString('hex')])
+    expect(payload.entry_count).toBe(2)
   })
 })

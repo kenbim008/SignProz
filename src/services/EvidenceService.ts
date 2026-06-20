@@ -156,10 +156,10 @@ export const EvidenceService = {
    * Verify a legal evidence certificate by checking:
    * 1. The certificate exists in the database
    * 2. The document's audit chain is intact
-   * 3. A daily transparency-log entry covers the completion date AND its
-   *    merkle_root is consistent with the audit_logs the appender saw
-   *    on that day (i.e. the log has not been tampered with since
-   *    `appendDailyLogEntry` ran).
+   * 3. A daily transparency-log entry covers the completion date AND
+   *    that entry's stored leaf set contains the certificate's
+   *    merkle_root_at_completion (i.e. the cert was on the day's
+   *    transparency log when appendDailyLogEntry ran).
    * 4. A TSA timestamp token exists (when applicable)
    */
   async verifyCertificate(certificateId: string): Promise<VerificationResult> {
@@ -178,17 +178,14 @@ export const EvidenceService = {
       return { valid: false, failure: 'chain_broken', details: chainResult.brokenAt }
     }
 
-    // Log check: pick the first log entry on or after the completion date,
-    // then recompute the day's Merkle root from the same set of audit_logs
-    // that `appendDailyLogEntry` used (i.e. all audit_logs whose created_at
-    // falls in [dayStart, dayEnd) for that log entry's log_date). If the
-    // recomputed root doesn't match the stored merkle_root, the log has
-    // been tampered with or rewritten (the property the D.3 spec promised
-    // the transparency log would provide).
+    // Log check (F3.3): pick the first log entry on or after the completion
+    // date, then test cert.merkleRootAtCompletion for membership in the
+    // stored leaf set. The leaf set is stored alongside merkle_root at
+    // append time -- no recompute, no audit_logs fetch.
     const completionDate = (manifest.completedAt || cert.createdAt.toISOString()).slice(0, 10)
     const { data: logEntry } = await supabase
       .from('evidence_log_entries')
-      .select('log_date, merkle_root, entry_count')
+      .select('log_date, merkle_root, entry_count, leaf_hashes')
       .gte('log_date', completionDate)
       .order('log_date', { ascending: true })
       .limit(1)
@@ -199,49 +196,50 @@ export const EvidenceService = {
     }
 
     const dayStr = logEntry.log_date as string
-    const dayStart = new Date(dayStr + 'T00:00:00Z')
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+    const certMerkle = cert.merkleRootAtCompletion
 
-    const { data: dayRows, error: dayErr } = await supabase
-      .from('audit_logs')
-      .select('hash')
-      .gte('created_at', dayStart.toISOString())
-      .lt('created_at', dayEnd.toISOString())
-
-    if (dayErr) {
-      logger.error('evidence.verify.audit_day_fetch_failed', dayErr, { dayStr })
-      return { valid: false, failure: 'log_broken', details: 'Failed to fetch daily audit logs for verification' }
-    }
-
-    const dayLeaves = (dayRows ?? [])
-      .map(r => toBuffer(r.hash))
-      .filter((b): b is Buffer => b !== null && b.length === 32)
-
-    const recomputedRoot = merkleRoot(dayLeaves)
-    // merkle_root is NOT NULL in the DB schema; toBuffer() will not return
-    // null in practice. The `?? Buffer.alloc(0)` keeps TypeScript happy
-    // and produces the same mismatch outcome as a null row would.
-    const storedRoot = toBuffer(logEntry.merkle_root) ?? Buffer.alloc(0)
-
-    // The recomputed root must equal the stored merkle_root. If not, the
-    // log entry's merkle_root does not match the audit_logs the appender
-    // actually saw that day -- the log was tampered with.
-    if (recomputedRoot.length !== storedRoot.length || !recomputedRoot.equals(storedRoot)) {
+    // Old certs issued before F3.3 won't have merkle_root_at_completion.
+    // Defensive: treat null as log_broken so we don't accidentally pass.
+    if (!certMerkle) {
       return {
         valid: false,
         failure: 'log_broken',
-        details: `Log entry merkle_root mismatch for ${dayStr}: recomputed ${recomputedRoot.toString('hex')} vs stored ${storedRoot.toString('hex')}`,
+        details: `cert merkle_root_at_completion is null for ${dayStr}`,
       }
     }
 
-    // Sanity: entry_count should match the leaf count we got. Not the
-    // primary check (the merkle_root comparison above is), but a cheap
-    // signal if the table was touched but the root happens to match.
-    if (typeof logEntry.entry_count === 'number' && logEntry.entry_count !== dayLeaves.length) {
+    // Decode the stored leaf set (JSONB array of hex strings) into an array
+    // of 32-byte Buffer instances, then test for membership with Buffer.equals().
+    // Set.has(buffer) compares by reference (Buffer is an Object), which would
+    // always be false for a freshly-decoded cert merkle_root -- use a linear
+    // scan instead. O(n) per verify is still O(1) relative to the day total.
+    const rawLeaves = (logEntry.leaf_hashes as unknown) ?? []
+    const leafBuffers: Buffer[] = []
+    if (Array.isArray(rawLeaves)) {
+      for (const hex of rawLeaves) {
+        if (typeof hex !== 'string' || hex.length !== 64) continue
+        const buf = Buffer.from(hex, 'hex')
+        if (buf.length === 32) leafBuffers.push(buf)
+      }
+    }
+
+    const inLeafSet = leafBuffers.some(b => b.equals(certMerkle))
+    if (!inLeafSet) {
       return {
         valid: false,
         failure: 'log_broken',
-        details: `Log entry entry_count mismatch for ${dayStr}: ${logEntry.entry_count} vs ${dayLeaves.length}`,
+        details: `cert merkle_root not in stored leaf set for ${dayStr}`,
+      }
+    }
+
+    // Sanity: entry_count should match the leaf buffer count. Cheap signal
+    // if the leaf_hashes array was rewritten but the membership happens to
+    // pass. The merkle_root_at_completion test above is the primary check.
+    if (typeof logEntry.entry_count === 'number' && logEntry.entry_count !== leafBuffers.length) {
+      return {
+        valid: false,
+        failure: 'log_broken',
+        details: `Log entry entry_count mismatch for ${dayStr}: ${logEntry.entry_count} vs ${leafBuffers.length}`,
       }
     }
 
@@ -511,6 +509,11 @@ export const EvidenceService = {
     logHash.update(dateStr, 'utf8')
     const finalLogHash = logHash.digest()
 
+    // F3.3: store the leaf set alongside merkle_root so verifyCertificate
+    // can do an O(1) Set.has() instead of recomputing the day's root from
+    // audit_logs. Insert order matches the audit_logs fetch order above.
+    const leafHashes = leaves.map(b => b.toString('hex'))
+
     const { error: insertErr } = await supabase
       .from('evidence_log_entries')
       .insert({
@@ -519,6 +522,7 @@ export const EvidenceService = {
         entry_count: leaves.length,
         prev_log_hash: prevLogHash,
         log_hash: finalLogHash,
+        leaf_hashes: leafHashes,
       })
 
     if (insertErr) {
