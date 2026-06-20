@@ -376,7 +376,7 @@ export const EvidenceService = {
       throw new ServiceError('INTERNAL', 'Failed to insert certificate')
     }
 
-    // Phase A.2: render the PDF
+    // Phase A.2-A.4: render the PDF, upload to Blob, and update the row.
     const createdAt = new Date(certRow.created_at)
     const certForPdf: Certificate = {
       id: certRow.id,
@@ -390,27 +390,7 @@ export const EvidenceService = {
       createdAt,
       tsaIssuedAt: null,
     }
-    const pdfBytes = await renderCertificatePdf(certForPdf, manifest)
-
-    // Phase A.3: upload to Vercel Blob
-    let pdfPath: string
-    try {
-      const blob = await blobPut(`certificates/${certRow.id}.pdf`, pdfBytes, {
-        access: 'public',
-        contentType: 'application/pdf',
-      })
-      pdfPath = `certificates/${certRow.id}.pdf`
-      logger.info('evidence.issue.pdf_uploaded', { certificateId: certRow.id, url: blob.url })
-    } catch (err) {
-      logger.error('evidence.issue.blob_upload_failed', err, { certificateId: certRow.id })
-      throw new ServiceError('BLOB_UPLOAD_FAILED', 'Failed to upload certificate PDF')
-    }
-
-    // Phase A.4: update the cert row with the PDF path
-    await supabase
-      .from('certificates')
-      .update({ pdf_storage_path: pdfPath })
-      .eq('id', certRow.id)
+    const pdfPath = await this._renderAndUploadPdf(certForPdf, manifest)
 
     // Phase B: TSA (fire-and-forget if !skipTsa)
     if (!options.skipTsa) {
@@ -423,6 +403,63 @@ export const EvidenceService = {
       ...certForPdf,
       pdfStoragePath: pdfPath,
     }
+  },
+
+  /**
+   * Internal: render the cert PDF, upload it to Vercel Blob, and update the
+   * certificates row with the storage path. Shared between `issueCertificate`
+   * (initial render) and `retryPhaseA` (recovery from a failed Phase A.3 upload).
+   */
+  async _renderAndUploadPdf(cert: Certificate, manifest: JsonManifest): Promise<string> {
+    const supabase = createAdminClient()
+    const pdfBytes = await renderCertificatePdf(cert, manifest)
+
+    try {
+      const blob = await blobPut(`certificates/${cert.id}.pdf`, pdfBytes, {
+        access: 'public',
+        contentType: 'application/pdf',
+      })
+      const pdfPath = `certificates/${cert.id}.pdf`
+      logger.info('evidence.issue.pdf_uploaded', { certificateId: cert.id, url: blob.url })
+      await supabase
+        .from('certificates')
+        .update({ pdf_storage_path: pdfPath })
+        .eq('id', cert.id)
+      return pdfPath
+    } catch (err) {
+      logger.error('evidence.issue.blob_upload_failed', err, { certificateId: cert.id })
+      throw new ServiceError('BLOB_UPLOAD_FAILED', 'Failed to upload certificate PDF')
+    }
+  },
+
+  /**
+   * Phase A retry: re-run Phase A.2-A.4 (render PDF + blob upload + cert
+   * row update) for a certificate whose initial Phase A failed at the blob
+   * upload step, leaving `pdf_storage_path IS NULL`. Idempotent: if the cert
+   * already has a PDF, this is a no-op.
+   *
+   * Driven by the `/api/cron/retry-phase-a` route (vercel.json: 02:00 UTC).
+   */
+  async retryPhaseA(certificateId: string): Promise<{ skipped: boolean }> {
+    const supabase = createAdminClient()
+    const row = await this._getCertificateRowWithManifest(certificateId)
+
+    if (!row) {
+      throw new ServiceError('NOT_FOUND', 'Certificate not found')
+    }
+
+    const { cert, manifest } = row
+
+    // Idempotency: if pdf_storage_path is already set, another retry beat us
+    // to it -- log and return without re-uploading.
+    if (cert.pdfStoragePath) {
+      logger.info('evidence.retry_phase_a.skip_present', { certificateId, path: cert.pdfStoragePath })
+      return { skipped: true }
+    }
+
+    await this._renderAndUploadPdf(cert, manifest)
+    logger.info('evidence.retry_phase_a.recovered', { certificateId })
+    return { skipped: false }
   },
 
   /**

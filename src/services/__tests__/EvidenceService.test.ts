@@ -916,3 +916,91 @@ describe('EvidenceService.appendDailyLogEntry', () => {
     expect(payload.entry_count).toBe(2)
   })
 })
+
+describe('EvidenceService.retryPhaseA', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+    mockRpc.mockReset()
+    mockBlobPut.mockReset()
+  })
+
+  const baseCertRow = {
+    id: 'cert-1',
+    document_id: 'doc-1',
+    content_hash_at_send: Buffer.from('a'.repeat(64), 'hex'),
+    content_hash_at_completion: Buffer.from('b'.repeat(64), 'hex'),
+    chain_root_hash: Buffer.from('c'.repeat(64), 'hex'),
+    merkle_root_at_completion: Buffer.from('d'.repeat(64), 'hex'),
+    pdf_storage_path: null,
+    tst_token: null,
+    json_manifest: {
+      documentId: 'doc-1', documentTitle: 'Test', completedAt: '2026-06-16T12:00:00Z',
+      signers: [], auditChain: [], contentHashAtSend: 'aa', contentHashAtCompletion: 'bb',
+    },
+    created_at: '2026-06-16T12:00:00Z',
+    tsa_issued_at: null,
+  }
+
+  it('renders, uploads, and updates the cert row when pdf_storage_path is null', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: baseCertRow, error: null }),
+      update: vi.fn().mockReturnThis(),
+    })
+    mockBlobPut.mockResolvedValue({ url: 'https://blob.vercel-test.dev/cert-1.pdf' })
+
+    const r = await EvidenceService.retryPhaseA('cert-1')
+
+    expect(r).toEqual({ skipped: false })
+    expect(mockBlobPut).toHaveBeenCalledTimes(1)
+    expect(mockBlobPut).toHaveBeenCalledWith(
+      'certificates/cert-1.pdf',
+      expect.any(Buffer),
+      expect.objectContaining({ access: 'public', contentType: 'application/pdf' }),
+    )
+    // The cert row was updated with pdf_storage_path
+    const updateMock = mockFrom.mock.results.find(r => r.value.update)?.value.update as ReturnType<typeof vi.fn>
+    expect(updateMock).toBeDefined()
+    expect(updateMock).toHaveBeenCalledWith({ pdf_storage_path: 'certificates/cert-1.pdf' })
+  })
+
+  it('no-ops when pdf_storage_path is already set (idempotency)', async () => {
+    const alreadyDoneRow = { ...baseCertRow, pdf_storage_path: 'certificates/cert-1.pdf' }
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: alreadyDoneRow, error: null }),
+    })
+
+    const r = await EvidenceService.retryPhaseA('cert-1')
+
+    expect(r).toEqual({ skipped: true })
+    expect(mockBlobPut).not.toHaveBeenCalled()
+    // No UPDATE call should be issued
+    const allMocks = mockFrom.mock.results
+    expect(allMocks.find(res => res.value.update)).toBeUndefined()
+  })
+
+  it('throws NOT_FOUND when the cert row does not exist', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+    })
+
+    await expect(EvidenceService.retryPhaseA('missing')).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    expect(mockBlobPut).not.toHaveBeenCalled()
+  })
+
+  it('propagates blob upload failures as BLOB_UPLOAD_FAILED ServiceError', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: baseCertRow, error: null }),
+    })
+    mockBlobPut.mockRejectedValue(new Error('blob down'))
+
+    await expect(EvidenceService.retryPhaseA('cert-1')).rejects.toMatchObject({ code: 'BLOB_UPLOAD_FAILED' })
+  })
+})

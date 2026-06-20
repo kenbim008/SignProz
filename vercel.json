@@ -2,6 +2,7 @@
   "framework": "nextjs",
   "crons": [
     { "path": "/api/cron/daily-evidence-log", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/retry-phase-a", "schedule": "7 2 * * *" },
     { "path": "/api/cron/backfill-timestamps", "schedule": "0 * * * *" }
   ]
 }
