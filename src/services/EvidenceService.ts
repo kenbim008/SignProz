@@ -36,7 +36,7 @@ export interface Certificate {
 
 export type VerificationResult =
   | { valid: true; chainOk: true; logOk: true; tsaOk: true; manifest: JsonManifest }
-  | { valid: true; chainOk: true; logOk: true; tsaOk: false; tsaPending: true; manifest: JsonManifest }
+  | { valid: true; chainOk: true; logOk: true; tsaOk: false; tsaTokenMissing: true; manifest: JsonManifest }
   | { valid: false; failure: 'chain_broken' | 'log_missing' | 'log_broken' | 'cert_not_found'; details?: string }
 
 export interface JsonManifest {
@@ -251,7 +251,7 @@ export const EvidenceService = {
     if (tsaOk) {
       return { valid: true, chainOk: true, logOk: true, tsaOk: true, manifest }
     }
-    return { valid: true, chainOk: true, logOk: true, tsaOk: false, tsaPending: true, manifest }
+    return { valid: true, chainOk: true, logOk: true, tsaOk: false, tsaTokenMissing: true, manifest }
   },
 
   /**
