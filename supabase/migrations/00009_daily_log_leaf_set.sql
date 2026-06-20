@@ -22,3 +22,26 @@
 
 ALTER TABLE public.evidence_log_entries
   ADD COLUMN IF NOT EXISTS leaf_hashes JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- Backfill: for any log entries that pre-date this migration, recompute
+-- the day's leaf set from audit_logs and store it. Without this, old
+-- entries would fail verify (their merkle_root can't be matched against
+-- the default empty leaf set). Idempotent: the WHERE clause skips rows
+-- that already have a non-empty leaf_hashes (i.e., written by the
+-- post-deploy code).
+UPDATE public.evidence_log_entries e
+SET leaf_hashes = COALESCE(
+  (
+    SELECT jsonb_agg(encode(hash, 'hex') ORDER BY al.created_at)
+    FROM public.audit_logs al
+    WHERE al.created_at >= e.log_date::timestamptz
+      AND al.created_at < (e.log_date + INTERVAL '1 day')::timestamptz
+  ),
+  '[]'::jsonb
+)
+WHERE jsonb_array_length(e.leaf_hashes) = 0
+  AND EXISTS (
+    SELECT 1 FROM public.audit_logs al
+    WHERE al.created_at >= e.log_date::timestamptz
+      AND al.created_at < (e.log_date + INTERVAL '1 day')::timestamptz
+  );

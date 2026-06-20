@@ -208,23 +208,19 @@ export const EvidenceService = {
       }
     }
 
-    // Decode the stored leaf set (JSONB array of hex strings) into an array
-    // of 32-byte Buffer instances, then test for membership with Buffer.equals().
-    // Set.has(buffer) compares by reference (Buffer is an Object), which would
-    // always be false for a freshly-decoded cert merkle_root -- use a linear
-    // scan instead. O(n) per verify is still O(1) relative to the day total.
+    // Decode the stored leaf set (JSONB array of hex strings) into a Set of
+    // hex strings keyed by the bytes themselves. String equality is value-based
+    // (unlike Buffer, where Set.has uses reference equality for objects), so
+    // `Set.has(certMerkle.toString('hex'))` is O(1). Construction is O(leaves).
     const rawLeaves = (logEntry.leaf_hashes as unknown) ?? []
-    const leafBuffers: Buffer[] = []
+    const leafSet = new Set<string>()
     if (Array.isArray(rawLeaves)) {
       for (const hex of rawLeaves) {
-        if (typeof hex !== 'string' || hex.length !== 64) continue
-        const buf = Buffer.from(hex, 'hex')
-        if (buf.length === 32) leafBuffers.push(buf)
+        if (typeof hex === 'string' && hex.length === 64) leafSet.add(hex)
       }
     }
 
-    const inLeafSet = leafBuffers.some(b => b.equals(certMerkle))
-    if (!inLeafSet) {
+    if (!leafSet.has(certMerkle.toString('hex'))) {
       return {
         valid: false,
         failure: 'log_broken',
@@ -232,14 +228,14 @@ export const EvidenceService = {
       }
     }
 
-    // Sanity: entry_count should match the leaf buffer count. Cheap signal
+    // Sanity: entry_count should match the leaf set size. Cheap signal
     // if the leaf_hashes array was rewritten but the membership happens to
     // pass. The merkle_root_at_completion test above is the primary check.
-    if (typeof logEntry.entry_count === 'number' && logEntry.entry_count !== leafBuffers.length) {
+    if (typeof logEntry.entry_count === 'number' && logEntry.entry_count !== leafSet.size) {
       return {
         valid: false,
         failure: 'log_broken',
-        details: `Log entry entry_count mismatch for ${dayStr}: ${logEntry.entry_count} vs ${leafBuffers.length}`,
+        details: `Log entry entry_count mismatch for ${dayStr}: ${logEntry.entry_count} vs ${leafSet.size}`,
       }
     }
 
