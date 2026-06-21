@@ -1,6 +1,6 @@
 # Deploy Runbook
 
-This document is the source of truth for shipping code to production. Follow these steps in order. **Do not skip the database migration step** — the code requires migrations `00004`, `00005`, `00007`, and `00008` to be applied first.
+This document is the source of truth for shipping code to production. Follow these steps in order. **Do not skip the database migration step** — the code requires migrations `00004`, `00005`, `00007`, `00008`, and `00009` to be applied first.
 
 ## Pre-deploy checklist
 
@@ -45,6 +45,34 @@ Then manually:
 2. Walk through the registration wizard (email → details → email OTP → phone OTP → password)
 3. Confirm the dashboard loads
 4. Sign out, then log back in
+
+### 5. Smoke test the cron endpoints (D.3+)
+
+The three Vercel Cron endpoints require `CRON_SECRET` in `Authorization: Bearer <secret>`.
+Use `scripts/smoke-cron.sh` to verify each:
+
+```bash
+# Against staging
+CRON_SECRET=<your-secret> BASE_URL=https://sign-proz-4xkr.vercel.app ./scripts/smoke-cron.sh
+
+# Against local dev (after `npm run dev`)
+CRON_SECRET=<your-secret> BASE_URL=http://localhost:3000 ./scripts/smoke-cron.sh
+```
+
+Expected output for each endpoint: HTTP `200` with JSON body containing `ok: true`.
+A `401 Unauthorized` means `CRON_SECRET` is not set in the deployment environment.
+
+After the smoke test passes, verify the daily evidence log was appended:
+
+```sql
+SELECT log_date, entry_count, jsonb_array_length(leaf_hashes) AS stored_leaves
+FROM evidence_log_entries
+ORDER BY log_date DESC
+LIMIT 1;
+```
+
+Expected: a row exists for today's UTC date with `entry_count` matching the count
+of completed documents for the day (or `0` if no documents completed today).
 
 ### 5. Monitor (30 minutes)
 
