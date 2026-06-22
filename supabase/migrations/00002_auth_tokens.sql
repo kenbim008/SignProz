@@ -16,6 +16,25 @@ CREATE TABLE IF NOT EXISTS public.auth_tokens (
 GRANT SELECT, INSERT, UPDATE ON TABLE public.auth_tokens TO authenticated;
 GRANT DELETE ON TABLE public.auth_tokens TO anon, authenticated;
 
+-- RLS: only the owner of a token can see/modify it
+ALTER TABLE public.auth_tokens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "auth_tokens_owner_select" ON public.auth_tokens FOR SELECT
+  TO authenticated
+  USING (email = auth.jwt() ->> 'email');
+
+CREATE POLICY "auth_tokens_owner_insert" ON public.auth_tokens FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "auth_tokens_owner_update" ON public.auth_tokens FOR UPDATE
+  TO authenticated
+  USING (email = auth.jwt() ->> 'email');
+
+CREATE POLICY "auth_tokens_owner_delete" ON public.auth_tokens FOR DELETE
+  TO anon
+  USING (true);
+
 -- Index for token lookups
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_token ON public.auth_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_expires ON public.auth_tokens(expires_at);

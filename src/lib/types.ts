@@ -82,3 +82,32 @@ export interface AgreementAnalyzeResponse {
   riskFlags: { level: 'low' | 'medium' | 'high'; description: string }[]
   recommendedActions: string[]
 }
+
+export interface RegistrationSession {
+  id: string
+  email: string
+  full_name: string | null
+  phone: string | null
+  has_verified_email: boolean
+  has_verified_phone: boolean
+  referral_code: string | null
+  created_at: string
+}
+
+export interface RegistrationStartBody {
+  email: string
+  referralCode?: string
+}
+
+export interface RegistrationSessionBody {
+  fullName?: string
+  phone?: string
+  hasVerifiedEmail?: boolean
+  hasVerifiedPhone?: boolean
+}
+
+export interface SetPasswordBody {
+  password: string
+}
+
+export type SignupStep = 'email' | 'details' | 'verify-email' | 'verify-phone-password'

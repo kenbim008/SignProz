@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import * as jose from 'jose'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('Magic session error:', err)
+    logger.error('magic session error', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

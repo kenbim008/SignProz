@@ -1,24 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 const FALLBACK_ANSWERS: Record<string, string> = {
   pricing:
     "SignProz offers Free, Pro ($10/mo annual or $20/mo), Premium ($39.95/mo annual or $59.95/mo), and Enterprise plans. Annual plans save ~50%. Visit /pricing for full details.",
   integration:
-    "SignProz integrates with 400+ tools including Microsoft 365, Salesforce, Slack, Google Workspace, HubSpot, and more via our REST API. Visit /integrations for the full list.",
+    "SignProz integrates with popular tools via our REST API, including Google Workspace and more. Visit /integrations for the full list.",
   security:
-    "SignProz is HIPAA-ready with AES-256 encryption, audit trails, and compliance with ESIGN Act and UETA. All documents are encrypted in transit and at rest.",
+    "SignProz encrypts all data in transit via TLS and follows industry security practices with audit trails and compliance with ESIGN Act and UETA. All documents are encrypted in transit and at rest.",
   affiliate:
     "Earn 20-30% recurring commissions through our affiliate program. Tiers: Bronze (20%), Silver (22%), Gold (25%), Platinum (30%). Visit /affiliate to join.",
   bulk:
-    "SignProz supports bulk document sending via CSV upload, API, or our Slack integration. Send to hundreds of recipients in one batch with individual tracking.",
+    "Bulk document sending is coming soon. In the meantime, you can send documents individually via the workspace or API.",
   hipaa:
-    "Yes, SignProz supports HIPAA-compliant workflows. Enterprise plans include BAA agreements, audit logs, and dedicated support. Contact sales for details.",
+    "Enterprise plans include audit logs and dedicated support. Contact sales for details about advanced compliance needs.",
 }
 
 const DEFAULT_ANSWER =
-  "That's a great question! SignProz is a professional eSignature platform with AI assistance, 400+ integrations, and recurring affiliate rewards. Visit /pricing for plan details or /affiliate to learn about our affiliate program."
+  "That's a great question! SignProz is a professional eSignature platform with AI assistance, API access, and recurring affiliate rewards. Visit /pricing for plan details or /affiliate to learn about our affiliate program."
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const { allowed, remaining } = rateLimit(`ai:${ip}`, 20, 60000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '60' } as HeadersInit }
+    )
+  }
+
   const { searchParams } = new URL(request.url)
   const question = (searchParams.get('question') || '').toLowerCase().trim()
 

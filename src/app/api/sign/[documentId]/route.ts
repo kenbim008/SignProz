@@ -1,5 +1,6 @@
-import { createAdminClient } from '@/lib/supabase/admin'
-import { isTokenExpired } from '@/lib/utils'
+import { NextResponse } from 'next/server'
+import { SigningService, isServiceError, serviceErrorToStatus } from '@/services'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ documentId: string }>
@@ -7,45 +8,44 @@ interface RouteParams {
 
 export async function GET(request: Request, { params }: RouteParams) {
   const { documentId } = await params
-  const url = new URL(request.url)
-  const token = url.searchParams.get('token')
+  const { searchParams } = new URL(request.url)
+  const token = searchParams.get('token')
 
   if (!token) {
-    return Response.json({ error: 'Missing token' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing token' }, { status: 400 })
   }
 
-  const supabaseAdmin = createAdminClient()
+  try {
+    const context = await SigningService.getSigningContext(documentId, token)
 
-  // Look up signer by magic_token and document_id
-  const { data: signer, error: signerError } = await supabaseAdmin
-    .from('signers')
-    .select('*')
-    .eq('magic_token', token)
-    .eq('document_id', documentId)
-    .single()
+    // Determine state — the client reads `state` to decide what to render
+    let state: string = 'ready'
+    if (context.document.status === 'completed') {
+      state = 'completed'
+    } else {
+      // Sequential signing: if any prior-order signer hasn't signed, this signer must wait
+      const sortedSigners = [...context.document.signers].sort((a, b) => a.order - b.order)
+      const firstUnsigned = sortedSigners.find((s) => !s.signed_at)
+      if (firstUnsigned && firstUnsigned.id !== context.signer.id) {
+        state = 'sequential_wait'
+      }
+    }
 
-  if (signerError || !signer) {
-    return Response.json({ error: 'Invalid token' }, { status: 401 })
+    return NextResponse.json({ state, ...context })
+  } catch (err) {
+    if (isServiceError(err)) {
+      // Map specific codes to the old `state` field shape so the client doesn't break
+      const state =
+        err.code === 'CONFLICT' ? 'already_signed' :
+        err.code === 'TOKEN_EXPIRED' ? 'expired' :
+        undefined
+      logger.warn('sign.context.rejected', { documentId, code: err.code })
+      return NextResponse.json(
+        { error: err.message, ...err.details, ...(state ? { state } : {}) },
+        { status: serviceErrorToStatus(err.code) }
+      )
+    }
+    logger.error('sign.context.error', err, { documentId })
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-
-  // Fetch the document with all related data
-  const { data: document, error: docError } = await supabaseAdmin
-    .from('documents')
-    .select('*, signature_fields(*), signers(*)')
-    .eq('id', documentId)
-    .single()
-
-  if (docError || !document) {
-    return Response.json({ error: 'Document not found' }, { status: 404 })
-  }
-
-  // Check if token expired
-  if (isTokenExpired(signer.token_expires_at)) {
-    return Response.json({ error: 'Link expired' }, { status: 410 })
-  }
-
-  return Response.json({
-    document,
-    signer,
-  })
 }

@@ -6,7 +6,7 @@ interface AuthMagicLinkEmailProps {
   type: 'login' | 'signup'
 }
 
-export function AuthMagicLinkEmail({ email, magicUrl, type }: AuthMagicLinkEmailProps) {
+export function AuthMagicLinkEmail({ magicUrl, type }: AuthMagicLinkEmailProps) {
   return (
     <Html>
       <Head />

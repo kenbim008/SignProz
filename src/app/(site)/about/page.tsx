@@ -43,7 +43,7 @@ export default function AboutPage() {
           <ul className="space-y-3">
             <li className="flex items-start gap-3">
               <svg className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              <span><strong>Security first</strong> — end-to-end encryption, audit trails, and HIPAA compliance for sensitive workflows.</span>
+              <span><strong>Security first</strong> — end-to-end encryption, audit trails, and data encryption for sensitive workflows.</span>
             </li>
             <li className="flex items-start gap-3">
               <svg className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>

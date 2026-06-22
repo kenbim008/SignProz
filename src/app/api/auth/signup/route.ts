@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { sendAuthMagicLinkEmail } from '@/lib/email/sendAuthMagicLink'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: Request) {
   try {
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
       })
 
     if (tokenError) {
-      console.error('Token storage error:', tokenError)
+      logger.error('token storage error', tokenError, { email })
       return Response.json({ error: 'Failed to create magic link' }, { status: 500 })
     }
 
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
       message: 'Check your email for the signup link.',
     })
   } catch (error) {
-    console.error('Signup error:', error)
+    logger.error('signup error', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

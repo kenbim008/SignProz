@@ -1,0 +1,1529 @@
+{
+  "next-env.d.ts": {
+    "symbols": []
+  },
+  "next.config.ts": {
+    "symbols": [
+      {
+        "path": "next.config.ts",
+        "symbolName": "nextConfig",
+        "kind": "const",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/auth.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/auth.ts",
+        "symbolName": "getSession",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 40,
+        "keywords": [
+          "unified",
+          "session",
+          "helper",
+          "supports",
+          "both",
+          "supabase",
+          "auth",
+          "custom",
+          "magic",
+          "link"
+        ]
+      }
+    ]
+  },
+  "src/lib/types.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "DocumentStatus",
+        "kind": "type",
+        "lineStart": 1,
+        "lineEnd": 1,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "PlanTier",
+        "kind": "type",
+        "lineStart": 2,
+        "lineEnd": 2,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "FieldType",
+        "kind": "type",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "AffiliateStatus",
+        "kind": "type",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "Document",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 18,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "Signer",
+        "kind": "interface",
+        "lineStart": 20,
+        "lineEnd": 32,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "SignatureField",
+        "kind": "interface",
+        "lineStart": 34,
+        "lineEnd": 46,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "AuditLog",
+        "kind": "interface",
+        "lineStart": 48,
+        "lineEnd": 56,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "SignRequestBody",
+        "kind": "interface",
+        "lineStart": 58,
+        "lineEnd": 61,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "AddSignerBody",
+        "kind": "interface",
+        "lineStart": 63,
+        "lineEnd": 67,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "AddFieldBody",
+        "kind": "interface",
+        "lineStart": 69,
+        "lineEnd": 77,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/types.ts",
+        "symbolName": "AgreementAnalyzeResponse",
+        "kind": "interface",
+        "lineStart": 79,
+        "lineEnd": 84,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/utils.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "generateMagicToken",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 7,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "getTokenExpiry",
+        "kind": "function",
+        "lineStart": 9,
+        "lineEnd": 13,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "isTokenExpired",
+        "kind": "function",
+        "lineStart": 15,
+        "lineEnd": 17,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "formatDate",
+        "kind": "function",
+        "lineStart": 19,
+        "lineEnd": 25,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "isSequentialSigning",
+        "kind": "function",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "addAuditLog",
+        "kind": "function",
+        "lineStart": 32,
+        "lineEnd": 47,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "apiError",
+        "kind": "function",
+        "lineStart": 49,
+        "lineEnd": 51,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "symbolName": "apiSuccess",
+        "kind": "function",
+        "lineStart": 53,
+        "lineEnd": 55,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/supabase/admin.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/supabase/admin.ts",
+        "symbolName": "createAdminClient",
+        "kind": "function",
+        "lineStart": 4,
+        "lineEnd": 15,
+        "keywords": [
+          "serverside",
+          "only",
+          "bypasses",
+          "rls",
+          "use",
+          "admin",
+          "tasks"
+        ]
+      }
+    ]
+  },
+  "src/lib/supabase/browser.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/supabase/browser.ts",
+        "symbolName": "createBrowserClient",
+        "kind": "function",
+        "lineStart": 3,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/supabase/browser.ts",
+        "symbolName": "getBrowserClient",
+        "kind": "function",
+        "lineStart": 12,
+        "lineEnd": 20,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/supabase/server.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/supabase/server.ts",
+        "symbolName": "createServerClient",
+        "kind": "function",
+        "lineStart": 4,
+        "lineEnd": 35,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/index.ts": {
+    "symbols": []
+  },
+  "src/lib/email/sendAuthMagicLink.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/email/sendAuthMagicLink.ts",
+        "symbolName": "getResendClient",
+        "kind": "function",
+        "lineStart": 7,
+        "lineEnd": 12,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendAuthMagicLink.ts",
+        "symbolName": "sendAuthMagicLinkEmail",
+        "kind": "function",
+        "lineStart": 14,
+        "lineEnd": 31,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/sendCompletionEmail.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/email/sendCompletionEmail.ts",
+        "symbolName": "getTransporter",
+        "kind": "function",
+        "lineStart": 7,
+        "lineEnd": 17,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendCompletionEmail.ts",
+        "symbolName": "CompletionPayload",
+        "kind": "interface",
+        "lineStart": 19,
+        "lineEnd": 26,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendCompletionEmail.ts",
+        "symbolName": "sendCompletionEmail",
+        "kind": "function",
+        "lineStart": 28,
+        "lineEnd": 37,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/sendExpiredNotification.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/email/sendExpiredNotification.ts",
+        "symbolName": "getTransporter",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 15,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendExpiredNotification.ts",
+        "symbolName": "ExpiredLinkPayload",
+        "kind": "interface",
+        "lineStart": 17,
+        "lineEnd": 24,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendExpiredNotification.ts",
+        "symbolName": "sendExpiredLinkNotification",
+        "kind": "function",
+        "lineStart": 26,
+        "lineEnd": 42,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/sendMagicLink.ts": {
+    "symbols": [
+      {
+        "path": "src/lib/email/sendMagicLink.ts",
+        "symbolName": "getNodemailerTransporter",
+        "kind": "function",
+        "lineStart": 9,
+        "lineEnd": 19,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendMagicLink.ts",
+        "symbolName": "getResendClient",
+        "kind": "function",
+        "lineStart": 21,
+        "lineEnd": 26,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendMagicLink.ts",
+        "symbolName": "isProduction",
+        "kind": "function",
+        "lineStart": 28,
+        "lineEnd": 30,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendMagicLink.ts",
+        "symbolName": "Signer",
+        "kind": "interface",
+        "lineStart": 32,
+        "lineEnd": 37,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendMagicLink.ts",
+        "symbolName": "Document",
+        "kind": "interface",
+        "lineStart": 39,
+        "lineEnd": 43,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/sendMagicLink.ts",
+        "symbolName": "sendMagicLinkEmail",
+        "kind": "function",
+        "lineStart": 45,
+        "lineEnd": 79,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/templates/AuthMagicLinkEmail.tsx": {
+    "symbols": [
+      {
+        "path": "src/lib/email/templates/AuthMagicLinkEmail.tsx",
+        "symbolName": "AuthMagicLinkEmailProps",
+        "kind": "interface",
+        "lineStart": 3,
+        "lineEnd": 7,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/templates/AuthMagicLinkEmail.tsx",
+        "symbolName": "AuthMagicLinkEmail",
+        "kind": "function",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/templates/AuthMagicLinkEmail.tsx",
+        "symbolName": "styles",
+        "kind": "const",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/templates/CompletionEmail.tsx": {
+    "symbols": [
+      {
+        "path": "src/lib/email/templates/CompletionEmail.tsx",
+        "symbolName": "CompletionEmailProps",
+        "kind": "interface",
+        "lineStart": 11,
+        "lineEnd": 16,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/templates/CompletionEmail.tsx",
+        "symbolName": "CompletionEmail",
+        "kind": "function",
+        "lineStart": 18,
+        "lineEnd": 23,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/templates/CompletionEmail.tsx",
+        "symbolName": "styles",
+        "kind": "const",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "keywords": []
+      }
+    ]
+  },
+  "src/lib/email/templates/MagicLinkEmail.tsx": {
+    "symbols": [
+      {
+        "path": "src/lib/email/templates/MagicLinkEmail.tsx",
+        "symbolName": "MagicLinkEmailProps",
+        "kind": "interface",
+        "lineStart": 14,
+        "lineEnd": 20,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/templates/MagicLinkEmail.tsx",
+        "symbolName": "MagicLinkEmail",
+        "kind": "function",
+        "lineStart": 22,
+        "lineEnd": 28,
+        "keywords": []
+      },
+      {
+        "path": "src/lib/email/templates/MagicLinkEmail.tsx",
+        "symbolName": "styles",
+        "kind": "const",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/providers.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/providers.tsx",
+        "symbolName": "SupabaseContextValue",
+        "kind": "interface",
+        "lineStart": 7,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/components/providers.tsx",
+        "symbolName": "SupabaseContext",
+        "kind": "const",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "keywords": []
+      },
+      {
+        "path": "src/components/providers.tsx",
+        "symbolName": "useSupabase",
+        "kind": "function",
+        "lineStart": 14,
+        "lineEnd": 18,
+        "keywords": []
+      },
+      {
+        "path": "src/components/providers.tsx",
+        "symbolName": "Providers",
+        "kind": "function",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/AffiliateModal.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/modals/AffiliateModal.tsx",
+        "symbolName": "AffiliateModalProps",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 14,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AffiliateModal.tsx",
+        "symbolName": "REVENUE_PROJECTION",
+        "kind": "const",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AffiliateModal.tsx",
+        "symbolName": "TIERS",
+        "kind": "const",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AffiliateModal.tsx",
+        "symbolName": "AffiliateModal",
+        "kind": "function",
+        "lineStart": 30,
+        "lineEnd": 38,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/AiAgreementModal.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/modals/AiAgreementModal.tsx",
+        "symbolName": "AiAgreementModalProps",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 9,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiAgreementModal.tsx",
+        "symbolName": "AnalysisResult",
+        "kind": "interface",
+        "lineStart": 11,
+        "lineEnd": 16,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiAgreementModal.tsx",
+        "symbolName": "AiAgreementModal",
+        "kind": "function",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/AiFaqModal.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/modals/AiFaqModal.tsx",
+        "symbolName": "AiFaqModalProps",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 9,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiFaqModal.tsx",
+        "symbolName": "FaqMessage",
+        "kind": "interface",
+        "lineStart": 11,
+        "lineEnd": 15,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiFaqModal.tsx",
+        "symbolName": "QUICK_QUESTIONS",
+        "kind": "const",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiFaqModal.tsx",
+        "symbolName": "AiFaqModal",
+        "kind": "function",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/AiTemplateModal.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/modals/AiTemplateModal.tsx",
+        "symbolName": "AiTemplateModalProps",
+        "kind": "interface",
+        "lineStart": 7,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiTemplateModal.tsx",
+        "symbolName": "TEMPLATE_TYPES",
+        "kind": "const",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiTemplateModal.tsx",
+        "symbolName": "INDUSTRIES",
+        "kind": "const",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiTemplateModal.tsx",
+        "symbolName": "GeneratedTemplate",
+        "kind": "interface",
+        "lineStart": 15,
+        "lineEnd": 19,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/AiTemplateModal.tsx",
+        "symbolName": "AiTemplateModal",
+        "kind": "function",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/Modal.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/modals/Modal.tsx",
+        "symbolName": "Modal",
+        "kind": "function",
+        "lineStart": 3,
+        "lineEnd": 9,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/SignatureModal.tsx": {
+    "symbols": [
+      {
+        "path": "src/components/modals/SignatureModal.tsx",
+        "symbolName": "SignatureType",
+        "kind": "type",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/SignatureModal.tsx",
+        "symbolName": "SignatureData",
+        "kind": "interface",
+        "lineStart": 8,
+        "lineEnd": 11,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/SignatureModal.tsx",
+        "symbolName": "SignatureModalProps",
+        "kind": "interface",
+        "lineStart": 13,
+        "lineEnd": 19,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/SignatureModal.tsx",
+        "symbolName": "Tab",
+        "kind": "type",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "keywords": []
+      },
+      {
+        "path": "src/components/modals/SignatureModal.tsx",
+        "symbolName": "SignatureModal",
+        "kind": "function",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "keywords": []
+      }
+    ]
+  },
+  "src/components/modals/index.ts": {
+    "symbols": []
+  },
+  "src/app/layout.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/layout.tsx",
+        "symbolName": "inter",
+        "kind": "const",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "keywords": []
+      },
+      {
+        "path": "src/app/layout.tsx",
+        "symbolName": "caveat",
+        "kind": "const",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "keywords": []
+      },
+      {
+        "path": "src/app/layout.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/page.tsx",
+        "symbolName": "keyFeatures",
+        "kind": "const",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/sign/[documentId]/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "caveat",
+        "kind": "const",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "keywords": []
+      },
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "SignatureMode",
+        "kind": "type",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "keywords": []
+      },
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "SignatureField",
+        "kind": "interface",
+        "lineStart": 13,
+        "lineEnd": 24,
+        "keywords": []
+      },
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "Signer",
+        "kind": "interface",
+        "lineStart": 26,
+        "lineEnd": 33,
+        "keywords": []
+      },
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "Document",
+        "kind": "interface",
+        "lineStart": 35,
+        "lineEnd": 42,
+        "keywords": []
+      },
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "SignState",
+        "kind": "type",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "keywords": []
+      },
+      {
+        "path": "src/app/sign/[documentId]/page.tsx",
+        "symbolName": "SignPageContent",
+        "kind": "function",
+        "lineStart": 46,
+        "lineEnd": 686,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/sign/[documentId]/invalid/page.tsx": {
+    "symbols": []
+  },
+  "src/app/sign/[documentId]/expired/page.tsx": {
+    "symbols": []
+  },
+  "src/app/sign/[documentId]/already-signed/page.tsx": {
+    "symbols": []
+  },
+  "src/app/dashboard/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "Tab",
+        "kind": "type",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "DocFilter",
+        "kind": "type",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "Doc",
+        "kind": "interface",
+        "lineStart": 12,
+        "lineEnd": 18,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "Session",
+        "kind": "interface",
+        "lineStart": 20,
+        "lineEnd": 22,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "revenueProjection",
+        "kind": "const",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "tierColors",
+        "kind": "const",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "recentReferrals",
+        "kind": "const",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "SIGN_EDIT_PALETTE",
+        "kind": "const",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "ADD_FIELDS_PALETTE",
+        "kind": "const",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "symbolName": "FIELD_COLORS",
+        "kind": "const",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/dashboard/documents/[id]/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "Signer",
+        "kind": "interface",
+        "lineStart": 7,
+        "lineEnd": 14,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "Field",
+        "kind": "interface",
+        "lineStart": 16,
+        "lineEnd": 29,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "Document",
+        "kind": "interface",
+        "lineStart": 31,
+        "lineEnd": 38,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "ActiveTab",
+        "kind": "type",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "SigningMode",
+        "kind": "type",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "RightPanelTab",
+        "kind": "type",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "keywords": []
+      },
+      {
+        "path": "src/app/dashboard/documents/[id]/page.tsx",
+        "symbolName": "FIELD_PALETTE",
+        "kind": "const",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/auth/verify-otp/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/auth/verify-otp/page.tsx",
+        "symbolName": "VerifyOtpContent",
+        "kind": "function",
+        "lineStart": 6,
+        "lineEnd": 123,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/auth/magic-login/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/auth/magic-login/page.tsx",
+        "symbolName": "MagicLoginContent",
+        "kind": "function",
+        "lineStart": 7,
+        "lineEnd": 76,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/auth/callback/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/auth/callback/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 118,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/sign/[documentId]/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/sign/[documentId]/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 4,
+        "lineEnd": 6,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/sign/[documentId]/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/referrals/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/referrals/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 53,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 7,
+        "lineEnd": 39,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 41,
+        "lineEnd": 76,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/route.ts",
+        "symbolName": "PUT",
+        "kind": "function",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/route.ts",
+        "symbolName": "DELETE",
+        "kind": "function",
+        "lineStart": 78,
+        "lineEnd": 78,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/signers/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/signers/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/signers/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/signers/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/signers/[signerId]/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/signers/[signerId]/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/signers/[signerId]/route.ts",
+        "symbolName": "DELETE",
+        "kind": "function",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/signers/[signerId]/resend/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/signers/[signerId]/resend/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 8,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/signers/[signerId]/resend/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/sign/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/sign/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/sign/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/send/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/send/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 8,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/send/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/fields/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/fields/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/fields/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/fields/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/documents/[id]/fields/[fieldId]/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/documents/[id]/fields/[fieldId]/route.ts",
+        "symbolName": "RouteParams",
+        "kind": "interface",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/fields/[fieldId]/route.ts",
+        "symbolName": "PUT",
+        "kind": "function",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/documents/[id]/fields/[fieldId]/route.ts",
+        "symbolName": "DELETE",
+        "kind": "function",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/auth/verify/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/auth/verify/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 6,
+        "lineEnd": 53,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/auth/signup/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/auth/signup/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 48,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/auth/session/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/auth/session/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 47,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/auth/magic-session/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/auth/magic-session/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 6,
+        "lineEnd": 120,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/auth/logout/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/auth/logout/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 27,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/auth/login/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/auth/login/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 5,
+        "lineEnd": 48,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/ai/faq/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/ai/faq/route.ts",
+        "symbolName": "FALLBACK_ANSWERS",
+        "kind": "const",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/ai/faq/route.ts",
+        "symbolName": "DEFAULT_ANSWER",
+        "kind": "const",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/ai/faq/route.ts",
+        "symbolName": "GET",
+        "kind": "function",
+        "lineStart": 21,
+        "lineEnd": 72,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/api/agreement-analyze/route.ts": {
+    "symbols": [
+      {
+        "path": "src/app/api/agreement-analyze/route.ts",
+        "symbolName": "SYSTEM_PROMPT",
+        "kind": "const",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/agreement-analyze/route.ts",
+        "symbolName": "getAnthropic",
+        "kind": "function",
+        "lineStart": 6,
+        "lineEnd": 9,
+        "keywords": []
+      },
+      {
+        "path": "src/app/api/agreement-analyze/route.ts",
+        "symbolName": "POST",
+        "kind": "function",
+        "lineStart": 11,
+        "lineEnd": 47,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/terms/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/terms/page.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/templates/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/templates/page.tsx",
+        "symbolName": "templates",
+        "kind": "const",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/privacy/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/privacy/page.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/pricing/PricingClient.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/pricing/PricingClient.tsx",
+        "symbolName": "plans",
+        "kind": "const",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/pricing/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/pricing/page.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/demo/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/demo/page.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/affiliate/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/affiliate/page.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 3,
+        "lineEnd": 3,
+        "keywords": []
+      },
+      {
+        "path": "src/app/(site)/affiliate/page.tsx",
+        "symbolName": "revenueProjection",
+        "kind": "const",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "keywords": []
+      },
+      {
+        "path": "src/app/(site)/affiliate/page.tsx",
+        "symbolName": "tiers",
+        "kind": "const",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(site)/about/page.tsx": {
+    "symbols": [
+      {
+        "path": "src/app/(site)/about/page.tsx",
+        "symbolName": "metadata",
+        "kind": "const",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "keywords": []
+      }
+    ]
+  },
+  "src/app/(auth)/signup/page.tsx": {
+    "symbols": []
+  },
+  "src/app/(auth)/login/page.tsx": {
+    "symbols": []
+  },
+  "scripts/test-email.ts": {
+    "symbols": [
+      {
+        "path": "scripts/test-email.ts",
+        "symbolName": "envPath",
+        "kind": "const",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "keywords": [
+          "load",
+          "envlocal",
+          "manually"
+        ]
+      },
+      {
+        "path": "scripts/test-email.ts",
+        "symbolName": "envContent",
+        "kind": "const",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "keywords": [
+          "load",
+          "envlocal",
+          "manually"
+        ]
+      }
+    ]
+  }
+}
